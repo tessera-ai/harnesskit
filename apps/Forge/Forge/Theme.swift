@@ -125,6 +125,8 @@ struct PillLabel: View {
             Text(text)
                 .font(.system(size: 13, weight: .medium))
                 .tracking(-0.2)
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
