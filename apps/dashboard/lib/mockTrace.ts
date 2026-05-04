@@ -42,14 +42,31 @@ export interface MockRun {
   scorecard: EvalScore;
 }
 
-const HEALTHKIT_ARGS = JSON.stringify({
+const HEALTHKIT_ARGS_1 = JSON.stringify({
   metrics: ["hrv", "sleep", "restingHeartRate"],
 });
-
-const HEALTHKIT_RESULT = JSON.stringify({
+const HEALTHKIT_RESULT_1 = JSON.stringify({
   hrv: 58,
   sleep: 7.2,
   restingHeartRate: 54,
+});
+
+const HEALTHKIT_ARGS_2 = JSON.stringify({
+  metrics: ["activeEnergy"],
+  window: "7d",
+});
+const HEALTHKIT_RESULT_2 = JSON.stringify({
+  activeEnergy: 11200,
+  window: "7d",
+  deltaVsPriorPct: -8,
+});
+
+const HEALTHKIT_ARGS_3 = JSON.stringify({
+  metrics: ["vo2Max"],
+});
+const HEALTHKIT_RESULT_3 = JSON.stringify({
+  vo2Max: 47.2,
+  zone2BpmRange: [130, 145],
 });
 
 const WORKOUT_ARGS = JSON.stringify({
@@ -77,7 +94,7 @@ const WORKOUT_RESULT = JSON.stringify({
 });
 
 const FINAL_TEXT =
-  "Recovery is solid (72/100). I scheduled a posterior-chain session at 6 PM, ~45 min.";
+  "Recovery is solid (72/100), load is under last week's avg. Scheduled posterior-chain at 6 PM, ~45 min — Zone-2 cooldown tuned to your VO₂.";
 
 export const mockRun: MockRun = {
   meta: {
@@ -103,19 +120,55 @@ export const mockRun: MockRun = {
       kind: "toolCall",
       atMs: 24,
       tool: "healthkit_read",
-      argsJSON: HEALTHKIT_ARGS,
+      argsJSON: HEALTHKIT_ARGS_1,
     },
     {
       kind: "toolResult",
       atMs: 156,
       durationMs: 132,
       tool: "healthkit_read",
-      resultJSON: HEALTHKIT_RESULT,
+      resultJSON: HEALTHKIT_RESULT_1,
     },
     {
       kind: "reasoning",
       atMs: 200,
-      text: "Recovery looks good. Plan posterior-chain session.",
+      text: "Recovery 72/100 — push posterior chain. Check training load.",
+    },
+    {
+      kind: "toolCall",
+      atMs: 220,
+      tool: "healthkit_read",
+      argsJSON: HEALTHKIT_ARGS_2,
+    },
+    {
+      kind: "toolResult",
+      atMs: 320,
+      durationMs: 100,
+      tool: "healthkit_read",
+      resultJSON: HEALTHKIT_RESULT_2,
+    },
+    {
+      kind: "reasoning",
+      atMs: 360,
+      text: "Load -8% vs last week — room for intensity. Tune Zone-2 cooldown.",
+    },
+    {
+      kind: "toolCall",
+      atMs: 380,
+      tool: "healthkit_read",
+      argsJSON: HEALTHKIT_ARGS_3,
+    },
+    {
+      kind: "toolResult",
+      atMs: 460,
+      durationMs: 80,
+      tool: "healthkit_read",
+      resultJSON: HEALTHKIT_RESULT_3,
+    },
+    {
+      kind: "reasoning",
+      atMs: 500,
+      text: "VO₂ 47.2 — Zone-2 130-145 bpm. Generating plan.",
     },
     {
       kind: "toolCall",

@@ -46,8 +46,8 @@ final class AgentTests: XCTestCase {
         XCTAssertFalse(response.text.isEmpty, "final text should be non-empty")
         XCTAssertEqual(response.trace.agentName, "ForgeCoach")
         XCTAssertGreaterThan(response.trace.events.count, 0, "trace events must be non-empty")
-        // Canonical SPEC §3 fixture is 8 events.
-        XCTAssertEqual(response.trace.events.count, 8)
+        // Canonical SPEC §3 fixture is 14 events (3 healthkit reads + workoutkit + reasoning/io).
+        XCTAssertEqual(response.trace.events.count, 14)
         XCTAssertEqual(response.trace.totalLatencyMs, 1200)
         XCTAssertEqual(response.trace.bytesEgressed, 0)
     }
