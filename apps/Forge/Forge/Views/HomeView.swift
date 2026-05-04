@@ -131,6 +131,12 @@ struct HomeView: View {
             }
         }
         .tint(.luminescentViolet)
+        .task {
+            if ProcessInfo.processInfo.arguments.contains("--auto-demo") {
+                try? await Task.sleep(nanoseconds: 800_000_000)
+                await runCoach()
+            }
+        }
     }
 
     // MARK: - Trace stack
@@ -167,7 +173,14 @@ struct HomeView: View {
         // Kick off the real agent.run() in parallel with the animation. We
         // don't gate navigation on its latency — the canonical animation
         // (~5s) is the long pole. Result lands in `pendingResult`.
+        // In --auto-demo mode (used to record the marketing video) we
+        // short-circuit to the canonical fixture so timing is deterministic
+        // and we don't depend on Foundation Models cold-start latency.
+        let isAutoDemo = ProcessInfo.processInfo.arguments.contains("--auto-demo")
         let runTask = Task<Result<AgentResponse, Error>, Never> {
+            if isAutoDemo {
+                return .success(CanonicalRun.makeResponse())
+            }
             do {
                 let resp = try await Coach.agent.run("Plan my workout for today")
                 return .success(resp)
