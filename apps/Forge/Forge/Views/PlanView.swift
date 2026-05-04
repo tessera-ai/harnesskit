@@ -52,6 +52,12 @@ struct PlanView: View {
         .toolbarBackground(Color.canvas, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
         .tint(.luminescentViolet)
+        .task {
+            if ProcessInfo.processInfo.arguments.contains("--auto-demo") {
+                try? await Task.sleep(nanoseconds: 1_500_000_000)
+                showScheduledToast()
+            }
+        }
     }
 
     // MARK: - Sections
