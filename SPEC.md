@@ -4,7 +4,7 @@ This is the contract for the v0 demo. Three implementations (Swift package, iOS 
 
 The Swift module is named `Tessera`; the brand display name is "Tessera AI". The package directory is kept as `packages/HarnessKit/` for SPM stability.
 
-## 1. Hero-shot SDK code (load-bearing — appears in the video)
+## 1. Hero-shot SDK code (load-bearing)
 
 ```swift
 import Tessera
@@ -130,7 +130,7 @@ public enum TraceEvent: Codable, Sendable {
 }
 ```
 
-## 3. Canonical run data (LOCK — used by Forge, console, and video)
+## 3. Canonical run data (LOCK — used by Forge and console)
 
 ### Input
 - `"Plan my workout for today"`
