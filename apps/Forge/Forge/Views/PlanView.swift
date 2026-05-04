@@ -62,7 +62,12 @@ struct PlanView: View {
                 Text("Today's plan")
                     .heading27Style()
                 Spacer()
+            }
+
+            HStack(spacing: 8) {
                 PillLabel(text: "Recovery 72", systemImage: "heart.fill", variant: .filled)
+                PillLabel(text: "Load -8% / 7d", systemImage: "flame.fill", variant: .subtle)
+                PillLabel(text: "VO₂ 47.2", systemImage: "lungs.fill", variant: .subtle)
             }
 
             Text(response.text)

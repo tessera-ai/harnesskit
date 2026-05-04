@@ -28,29 +28,44 @@ struct HomeView: View {
             text: "HealthKit.read · HRV, Sleep, RHR",
             symbolColor: Color.luminescentViolet
         )),
-        (1.2, TraceLine(
+        (0.9, TraceLine(
             symbol: "checkmark.circle.fill",
             text: "Recovery 72 / 100",
             symbolColor: Color.luminescentViolet
         )),
-        (2.0, TraceLine(
+        (1.5, TraceLine(
             symbol: "arrow.right.circle.fill",
-            text: "Generating posterior-chain plan",
+            text: "HealthKit.read · Active Energy 7d",
             symbolColor: Color.luminescentViolet
         )),
-        (3.0, TraceLine(
+        (2.1, TraceLine(
+            symbol: "checkmark.circle.fill",
+            text: "Load -8% vs last week",
+            symbolColor: Color.luminescentViolet
+        )),
+        (2.7, TraceLine(
+            symbol: "arrow.right.circle.fill",
+            text: "HealthKit.read · VO₂ Max",
+            symbolColor: Color.luminescentViolet
+        )),
+        (3.3, TraceLine(
+            symbol: "checkmark.circle.fill",
+            text: "VO₂ 47.2 · Zone-2 130-145 bpm",
+            symbolColor: Color.luminescentViolet
+        )),
+        (3.9, TraceLine(
             symbol: "arrow.right.circle.fill",
             text: "WorkoutKit.schedule",
             symbolColor: Color.luminescentViolet
         )),
-        (3.8, TraceLine(
+        (4.6, TraceLine(
             symbol: "checkmark.circle.fill",
             text: "1.2s on-device · 0 bytes egressed",
             symbolColor: Color.luminescentViolet
         ))
     ]
 
-    private static let animationFinishDelay: Double = 5.0
+    private static let animationFinishDelay: Double = 5.2
 
     var body: some View {
         NavigationStack {
@@ -78,7 +93,7 @@ struct HomeView: View {
                     // CTA + status
                     VStack(spacing: Spacing.element) {
                         traceStack
-                            .frame(height: 140, alignment: .topLeading)
+                            .frame(height: 220, alignment: .topLeading)
 
                         Button {
                             Task { await runCoach() }

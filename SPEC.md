@@ -135,11 +135,21 @@ public enum TraceEvent: Codable, Sendable {
 ### Input
 - `"Plan my workout for today"`
 
-### HealthKit snapshot
+### HealthKit signals (3 sequential reads — agent gathers signals it needs)
+
+**Read 1 — recovery snapshot:**
 - HRV: 58 ms
 - Sleep: 7.2 hours
 - Resting HR: 54 bpm
-- Computed recovery score (Forge-side): 72 / 100
+- Derived recovery score (Forge-side): 72 / 100
+
+**Read 2 — training load:**
+- Active Energy 7d: 11,200 kcal
+- Δ vs prior 7d: -8% (room to push)
+
+**Read 3 — fitness baseline:**
+- VO₂ Max: 47.2 ml/kg/min
+- Zone-2 target HR: 130-145 bpm
 
 ### Workout plan
 - Back Squat — 4 × 5 @ 85%
@@ -151,20 +161,28 @@ public enum TraceEvent: Codable, Sendable {
 - Today @ 18:00, 45 minutes
 
 ### Final text
-`"Recovery is solid (72/100). I scheduled a posterior-chain session at 6 PM, ~45 min."`
+`"Recovery is solid (72/100), load is under last week's avg. Scheduled posterior-chain at 6 PM, ~45 min — Zone-2 cooldown tuned to your VO₂."`
 
-### Trace (8 events, total ~1200ms, on-device, 0 bytes egressed)
+### Trace (14 events, total ~1200ms, on-device, 0 bytes egressed)
+
+The agent issues three sequential `healthkit_read` calls — each with a different metric subset — interleaved with reasoning that uses each signal to inform the next decision. This is the "agentic" pattern: observe → decide → next observation. The same `healthkit_read` tool (registered once) is invoked multiple times.
 
 | # | atMs | type | summary |
 |---|---|---|---|
 | 1 | 0 | userInput | "Plan my workout for today" |
 | 2 | 12 | reasoning | "Need recovery signals — calling HealthKit." |
-| 3 | 24 | toolCall | `healthkit_read` args `{metrics: [hrv, sleep, restingHeartRate]}` |
-| 4 | 156 | toolResult | `healthkit_read` (132ms) → `{hrv: 58, sleep: 7.2, restingHeartRate: 54}` |
-| 5 | 200 | reasoning | "Recovery looks good. Plan posterior-chain session." |
-| 6 | 1110 | toolCall | `workoutkit_schedule` args (full plan, 18:00, 45m) |
-| 7 | 1180 | toolResult | `workoutkit_schedule` (70ms) → `{scheduled: true, workoutId: "wk_a1b2c3"}` |
-| 8 | 1200 | finalResponse | (final text above) |
+| 3 | 24 | toolCall | `healthkit_read` args `{"metrics":["hrv","sleep","restingHeartRate"]}` |
+| 4 | 156 | toolResult | `healthkit_read` (132ms) → `{"hrv":58,"sleep":7.2,"restingHeartRate":54}` |
+| 5 | 200 | reasoning | "Recovery 72/100 — push posterior chain. Check training load." |
+| 6 | 220 | toolCall | `healthkit_read` args `{"metrics":["activeEnergy"],"window":"7d"}` |
+| 7 | 320 | toolResult | `healthkit_read` (100ms) → `{"activeEnergy":11200,"window":"7d","deltaVsPriorPct":-8}` |
+| 8 | 360 | reasoning | "Load -8% vs last week — room for intensity. Tune Zone-2 cooldown." |
+| 9 | 380 | toolCall | `healthkit_read` args `{"metrics":["vo2Max"]}` |
+| 10 | 460 | toolResult | `healthkit_read` (80ms) → `{"vo2Max":47.2,"zone2BpmRange":[130,145]}` |
+| 11 | 500 | reasoning | "VO₂ 47.2 — Zone-2 130-145 bpm. Generating plan." |
+| 12 | 1110 | toolCall | `workoutkit_schedule` args (full plan, 18:00, 45m) |
+| 13 | 1180 | toolResult | `workoutkit_schedule` (70ms) → `{"scheduled":true,"workoutId":"wk_a1b2c3"}` |
+| 14 | 1200 | finalResponse | (final text above) |
 
 ### Eval scorecard
 - Groundedness: 0.94
@@ -191,22 +209,28 @@ SwiftUI, iOS 26 simulator target. Two screens.
 - Footer pill: "Powered by Tessera AI · on-device"
 
 ### PlanView
-- Top: "Today's plan" + recovery chip "Recovery 72"
+- Top: "Today's plan" + signal-chip row showing all three derived signals:
+  - "Recovery 72" (filled, heart.fill icon)
+  - "Load -8% / 7d" (subtle, flame.fill icon)
+  - "VO₂ 47.2" (subtle, lungs.fill icon)
 - List of exercises (4 rows from canonical plan)
 - Big CTA: "Schedule for 6 PM"
 - On tap → toast "Scheduled · 45 min" → stay on screen
 - Small text: "0 bytes left your device"
 
 ### Coach.swift
+
+Production agent — registers the full HealthKit metric set so the model can request any subset across multiple calls. The §1 hero-shot is the *minimal* example; this is what the shipping app uses.
+
 ```swift
 import Tessera
 
 enum Coach {
     static let agent = Agent(
         name: "ForgeCoach",
-        instructions: "Plan today's lift based on recovery.",
+        instructions: "Plan today's lift based on recovery, training load, and aerobic baseline. Gather signals progressively.",
         tools: [
-            HealthKit.read(.hrv, .sleep, .restingHeartRate),
+            HealthKit.read(.hrv, .sleep, .restingHeartRate, .activeEnergy, .vo2Max),
             WorkoutKit.schedule
         ],
         model: .onDevice(.foundation),
