@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://github.com/tessera-ai/harnesskit/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="License" /></a>
-  <img src="https://img.shields.io/badge/platform-iOS%2026%2B%20%7C%20macOS%2026%2B-lightgrey" alt="Platform" />
+  <!--<img src="https://img.shields.io/badge/platform-iOS%2026%2B%20%7C%20macOS%2026%2B-lightgrey" alt="Platform" />-->
   <img src="https://img.shields.io/badge/Swift-6.0-orange" alt="Swift" />
 </p>
 
