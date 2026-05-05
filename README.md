@@ -1,4 +1,4 @@
-<h1 align="center">Tessera</h1>
+<h1 align="center">HarnessKit</h1>
 
 <p align="center">
   <strong>The production runtime for on-device health AI agents on Apple.</strong>
@@ -14,9 +14,9 @@
 
 Build a consumer health AI app in an afternoon instead of two quarters.
 
-Tessera gives you typed tool calls into HealthKit and WorkoutKit, on-device execution via Apple Foundation Models with cloud fallback, structured traces for debugging, and eval-ready observability — all through a declarative Swift API. User health data never leaves the device.
+HarnessKit gives you typed tool calls into HealthKit and WorkoutKit, on-device execution via Apple Foundation Models with cloud fallback, structured traces for debugging, and eval-ready observability — all through a declarative Swift API. User health data never leaves the device.
 
-**What it solves.** iOS teams building health-AI products spend 3–6 months building the same infrastructure before shipping anything: HealthKit integration, permission plumbing, model routing, tracing, and App Store 5.1.3(i) compliance. Tessera ships those pieces as an SDK. `import Tessera`, declare your tools, ship.
+**What it solves.** iOS teams building health-AI products spend 3–6 months building the same infrastructure before shipping anything: HealthKit integration, permission plumbing, model routing, tracing, and App Store 5.1.3(i) compliance. HarnessKit ships those pieces as an SDK. `import Tessera`, declare your tools, ship.
 
 ## Quick start
 
@@ -45,7 +45,7 @@ That's it. The agent reads HRV, sleep, and resting heart rate from HealthKit, pl
 
 ```
 ┌─────────────┐     ┌──────────────────┐     ┌───────────────────┐
-│  Your App   │────▶│  Tessera Agent   │────▶│ HealthKit /       │
+│  Your App   │────▶│  HarnessKit Agent│────▶│ HealthKit /       │
 │  (SwiftUI)  │◀────│  (on-device)     │◀────│ WorkoutKit tools  │
 └─────────────┘     └────────┬─────────┘     └───────────────────┘
                              │
@@ -62,7 +62,7 @@ That's it. The agent reads HRV, sleep, and resting heart rate from HealthKit, pl
 
 **Structured traces.** Every `Agent.run()` returns an `AgentTrace` with typed events (tool calls, reasoning, latencies, bytes egressed). Feed them into your eval pipeline, replay harness, or dev console.
 
-**Compliant by construction.** Tessera never stores user health data. The SDK executes on-device and returns results to your app. Zero server-side health data. This is the only architecture compliant with App Store guideline 5.1.3(i) without a privacy review dance.
+**Compliant by construction.** HarnessKit never stores user health data. The SDK executes on-device and returns results to your app. Zero server-side health data. This is the only architecture compliant with App Store guideline 5.1.3(i) without a privacy review dance.
 
 ## Installation
 
@@ -189,7 +189,7 @@ apps/dashboard/               Dev console (Next.js)
 
 ## Comparison
 
-| | Tessera | Terra API | LangChain Swift |
+| | HarnessKit | Terra API | LangChain Swift |
 |---|---|---|---|
 | **Execution** | On-device (Foundation Models) | Cloud API only | No built-in runner |
 | **HealthKit** | Typed tool calls, direct read | Cloud proxy, data leaves device | Manual integration |
