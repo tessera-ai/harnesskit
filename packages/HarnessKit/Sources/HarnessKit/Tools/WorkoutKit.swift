@@ -11,13 +11,32 @@ public enum WorkoutKit {
 }
 
 struct WorkoutKitScheduleTool: Tool {
+    private let scheduler: WorkoutScheduler
+
+    init(scheduler: WorkoutScheduler = MockWorkoutScheduler()) {
+        self.scheduler = scheduler
+    }
+
     var name: String { "workoutkit_schedule" }
     var toolDescription: String {
         "Schedule a strength workout in the user's calendar (mocked for demo)."
     }
 
     func invokeJSON(_ argsJSON: String) async throws -> String {
-        // Mocked — returns the canonical scheduling response.
-        return CanonicalRun.workoutkitResultJSON
+        struct Args: Decodable {
+            let exercises: [CanonicalRun.Exercise]
+            let time: String
+            let durationMin: Int
+        }
+        let data = Data(argsJSON.utf8)
+        let decoder = JSONDecoder()
+        let args = try decoder.decode(Args.self, from: data)
+        let result = try await scheduler.schedule(
+            exercises: args.exercises,
+            time: args.time,
+            durationMin: args.durationMin
+        )
+        let encoded = try JSONEncoder().encode(result)
+        return String(decoding: encoded, as: UTF8.self)
     }
 }
