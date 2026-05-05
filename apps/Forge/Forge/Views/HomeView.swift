@@ -11,6 +11,10 @@ struct HomeView: View {
     @State private var animationDone = false
     @State private var pendingResult: Result<AgentResponse, Error>?
 
+    @AppStorage("healthKitAuthorized") private var healthKitAuthorized = false
+    @State private var isRequestingPermission = false
+    @State private var showPermissionDenied = false
+
     /// One streaming trace-event line shown during the on-device "thinking"
     /// phase. Mirrors the cadence of the SPEC §3 canonical run.
     fileprivate struct TraceLine: Identifiable, Equatable {
@@ -92,16 +96,20 @@ struct HomeView: View {
 
                     // CTA + status
                     VStack(spacing: Spacing.element) {
-                        traceStack
-                            .frame(height: 220, alignment: .topLeading)
+                        if healthKitAuthorized {
+                            traceStack
+                                .frame(height: 220, alignment: .topLeading)
 
-                        Button {
-                            Task { await runCoach() }
-                        } label: {
-                            Text(isLoading ? "Planning…" : "Plan today's workout")
+                            Button {
+                                Task { await runCoach() }
+                            } label: {
+                                Text(isLoading ? "Planning…" : "Plan today's workout")
+                            }
+                            .buttonStyle(.primaryCTA)
+                            .disabled(isLoading)
+                        } else {
+                            permissionCard
                         }
-                        .buttonStyle(.primaryCTA)
-                        .disabled(isLoading)
 
                         if let errorMessage {
                             Text(errorMessage)
@@ -132,10 +140,72 @@ struct HomeView: View {
         }
         .tint(.luminescentViolet)
         .task {
+            // Sync persisted state with actual HealthKit authorization on launch.
+            healthKitAuthorized = HealthStoreManager.shared.isAuthorized
             if ProcessInfo.processInfo.arguments.contains("--auto-demo") {
                 try? await Task.sleep(nanoseconds: 800_000_000)
                 await runCoach()
             }
+        }
+        .alert("Health Access Required", isPresented: $showPermissionDenied) {
+            Button("Open Settings") {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Forge needs access to your Health data to personalize workout plans. Please enable Health in Settings.")
+        }
+    }
+
+    // MARK: - Permission card
+
+    private var permissionCard: some View {
+        VStack(spacing: Spacing.element) {
+            Image(systemName: "heart.text.square.fill")
+                .font(.system(size: 36))
+                .foregroundStyle(Color.luminescentViolet)
+
+            Text("Connect Apple Health")
+                .font(.subheading19)
+                .tracking(-0.32)
+                .foregroundStyle(Color.graphite)
+
+            Text("Forge reads your recovery metrics — HRV, sleep, resting heart rate — and schedules workouts to keep everything in one place.")
+                .font(.body16)
+                .tracking(-0.26)
+                .foregroundStyle(Color.slate)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 8)
+
+            Button {
+                requestHealthKitPermission()
+            } label: {
+                Text(isRequestingPermission ? "Authorizing…" : "Grant Health Access")
+            }
+            .buttonStyle(.primaryCTA)
+            .disabled(isRequestingPermission)
+        }
+        .softCard(padding: Spacing.group)
+    }
+
+    // MARK: - HealthKit permission
+
+    private func requestHealthKitPermission() {
+        isRequestingPermission = true
+        errorMessage = nil
+        Task {
+            do {
+                let granted = try await HealthStoreManager.shared.requestAuthorization()
+                healthKitAuthorized = granted
+                if !granted {
+                    showPermissionDenied = true
+                }
+            } catch {
+                errorMessage = "HealthKit authorization failed: \(error.localizedDescription)"
+            }
+            isRequestingPermission = false
         }
     }
 
