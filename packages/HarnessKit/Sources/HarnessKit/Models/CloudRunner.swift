@@ -1,8 +1,20 @@
 import Foundation
 
-/// CloudRunner — placeholder for hosted-model fallback (Claude / GPT).
-/// v0 stub returns the canonical AgentResponse with the provider's label
-/// stamped in. Real network wiring lives behind this seam.
+/// Abstracts cloud-hosted model execution. Production code uses a real
+/// HTTP client; tests inject a stub. Designed for dependency injection
+/// so callers can swap cloud backends without touching agent logic.
+public protocol CloudModelRunner: Sendable {
+    /// Run the agent's input through the cloud model and return a response.
+    func run(
+        agent: Agent,
+        input: String
+    ) async throws -> AgentResponse
+}
+
+/// Default stub runner — returns the canonical ``AgentResponse`` with the
+/// provider's label stamped in. Simulates a ~1200ms cloud round-trip for
+/// demo cadence. Real network wiring lives behind the ``CloudModelRunner``
+/// protocol seam for external implementations.
 enum CloudRunner {
     static func run(
         agent: Agent,
