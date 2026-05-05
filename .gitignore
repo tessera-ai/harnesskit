@@ -16,3 +16,7 @@ video/
 
 .env
 .env*.local
+
+# Spec and docs are internal working documents, not distributable
+docs/
+SPEC.md
