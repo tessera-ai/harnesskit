@@ -27,6 +27,8 @@ targets:
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
         CFBundleDisplayName: Forge
+        NSHealthShareUsageDescription: "Forge reads your recovery metrics (HRV, sleep, resting heart rate) to personalize workout plans."
+        NSHealthUpdateUsageDescription: "Forge schedules workouts in your Apple Health to keep your fitness data in one place."
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.harnesskit.Forge
@@ -35,3 +37,7 @@ targets:
         GENERATE_INFOPLIST_FILE: NO
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: ""
+    entitlements:
+      path: Forge/Forge.entitlements
+      properties:
+        com.apple.developer.healthkit: true

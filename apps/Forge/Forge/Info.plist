@@ -20,6 +20,10 @@
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Forge reads your recovery metrics (HRV, sleep, resting heart rate) to personalize workout plans.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Forge schedules workouts in your Apple Health to keep your fitness data in one place.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
