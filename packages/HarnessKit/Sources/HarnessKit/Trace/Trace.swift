@@ -1,13 +1,23 @@
 import Foundation
 
+/// A structured, replayable record of every event that occurred during a
+/// single ``Agent`` run. Codable for persistence and cross-platform transport.
 public struct AgentTrace: Codable, Sendable {
+    /// Unique identifier for this run.
     public let runId: String
+    /// The ``Agent`` name that produced this trace.
     public let agentName: String
+    /// Human-readable model label (e.g. "Apple Foundation Models (on-device)").
     public let modelLabel: String
+    /// Timestamp when the run started.
     public let startedAt: Date
+    /// Total wall-clock latency in milliseconds.
     public let totalLatencyMs: Int
+    /// Whether the run executed on-device (no cloud round-trip).
     public let onDevice: Bool
+    /// Network bytes sent during the run (0 for on-device).
     public let bytesEgressed: Int
+    /// Ordered sequence of events during the run.
     public let events: [TraceEvent]
 
     public init(
@@ -31,11 +41,18 @@ public struct AgentTrace: Codable, Sendable {
     }
 }
 
+/// A single event in an ``AgentTrace``. Discriminated union with explicit
+/// `kind` coding key for stable JSON serialization across platforms.
 public enum TraceEvent: Codable, Sendable {
+    /// The user's initial prompt text.
     case userInput(atMs: Int, text: String)
+    /// Intermediate model reasoning / chain-of-thought.
     case reasoning(atMs: Int, text: String)
+    /// A tool invocation request from the model.
     case toolCall(atMs: Int, tool: String, argsJSON: String)
+    /// The result returned by a tool invocation.
     case toolResult(atMs: Int, durationMs: Int, tool: String, resultJSON: String)
+    /// The model's final text response.
     case finalResponse(atMs: Int, text: String)
 
     // MARK: - Codable (discriminated by `kind`)
