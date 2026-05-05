@@ -8,12 +8,14 @@ public struct Agent: Sendable {
     public let tools: [any Tool]
     public let model: ModelProvider
     public let fallback: ModelProvider?
+    public let configuration: AgentConfiguration?
 
     public init(
         name: String,
         instructions: String,
         tools: [any Tool],
         model: ModelProvider,
+        configuration: AgentConfiguration? = nil,
         fallback: ModelProvider? = nil
     ) {
         self.name = name
@@ -21,6 +23,7 @@ public struct Agent: Sendable {
         self.tools = tools
         self.model = model
         self.fallback = fallback
+        self.configuration = configuration
     }
 
     /// Run the agent. Dispatches to `FoundationRunner` for on-device models
@@ -28,6 +31,10 @@ public struct Agent: Sendable {
     /// to the configured `fallback` provider when present; otherwise the
     /// error is propagated.
     public func run(_ input: String) async throws -> AgentResponse {
+        let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            throw TesseraError.invalidInput("Input must not be empty or whitespace")
+        }
         do {
             return try await runOn(provider: model, input: input)
         } catch {
@@ -51,8 +58,12 @@ public struct Agent: Sendable {
     }
 }
 
+/// The result of running an ``Agent``. Contains the model's text output and
+/// a full ``AgentTrace`` for debugging, replay, and analytics.
 public struct AgentResponse: Sendable {
+    /// The model's final text response.
     public let text: String
+    /// Structured trace of every event during the run (tool calls, reasoning, etc.).
     public let trace: AgentTrace
 
     public init(text: String, trace: AgentTrace) {

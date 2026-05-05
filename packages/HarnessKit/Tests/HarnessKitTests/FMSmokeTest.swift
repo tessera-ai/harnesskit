@@ -7,7 +7,7 @@
 //   - `LanguageModelSession(model:tools:instructions:)` initializer
 //   - `session.respond(to: String)` returning `Response<String>`
 
-#if canImport(FoundationModels)
+#if canImport(FoundationModels) && !os(macOS)
 import FoundationModels
 import XCTest
 
