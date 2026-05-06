@@ -127,7 +127,6 @@
 				};
 			};
 			buildConfigurationList = 6CD494A99F804B5C2D6C9DD2 /* Build configuration list for PBXProject "Forge" */;
-			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -140,6 +139,7 @@
 				7896B9A8C52887F1E13888E2 /* XCLocalSwiftPackageReference "../../packages/HarnessKit" */,
 			);
 			preferredProjectObjectVersion = 77;
+			productRefGroup = 4D92E0C67E2F7B85FC426E2E /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
