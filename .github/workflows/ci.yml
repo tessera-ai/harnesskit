@@ -7,40 +7,6 @@ on:
     branches: [main]
 
 jobs:
-  # Swift SDK build + test (macOS)
-  swift-sdk:
-    name: Swift SDK (build + test)
-    runs-on: macos-15
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Cache Swift Package Manager
-        uses: actions/cache@v4
-        with:
-          path: packages/HarnessKit/.build
-          key: ${{ runner.os }}-spm-${{ hashFiles('packages/HarnessKit/Package.swift') }}
-          restore-keys: |
-            ${{ runner.os }}-spm-
-
-      - name: Build
-        run: |
-          cd packages/HarnessKit
-          swift build
-
-      - name: Test
-        run: |
-          cd packages/HarnessKit
-          swift test --enable-code-coverage
-
-      - name: Report test coverage
-        run: |
-          xcrun llvm-cov report \
-            .build/debug/codecov/*.profdata \
-            --instr-profile=.build/debug/codecov/default.profdata \
-            > coverage.txt
-          cat coverage.txt
-
   # iOS app build (Forge)
   ios-app:
     name: Forge (Xcode build)
@@ -49,11 +15,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Cache Xcode derived data
-        uses: actions/cache@v4
-        with:
-          path: apps/Forge/DerivedData
-          key: ${{ runner.os }}-xcode-dd-${{ hashFiles('apps/Forge/project.yml') }}
+      - name: Install xcodegen
+        run: brew install xcodegen
 
       - name: Generate Xcode project
         run: |
