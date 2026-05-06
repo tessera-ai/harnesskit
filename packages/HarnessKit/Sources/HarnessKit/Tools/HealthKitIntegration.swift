@@ -80,7 +80,7 @@ public struct MockHealthDataProvider: HealthDataProvider, Sendable {
                 case .hrv:
                     let values = try await queryQuantity(
                         identifier: .heartRateVariabilitySDNN,
-                        unit: HKUnit.secondUnit(with: .milliseconds)
+                        unit: HKUnit.secondUnit(with: .milli)
                     )
                     if let latest = values.last {
                         result["hrv"] = latest
