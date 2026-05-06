@@ -97,9 +97,8 @@ struct PlanView: View {
 
     private var exerciseList: some View {
         VStack(spacing: Spacing.base) {
-            ForEach(exercises, id: \.name) { ex in
+            ForEach(Array(exercises.enumerated()), id: \.offset) { _, ex in
                 exerciseRow(ex)
-            }
         }
     }
 
@@ -242,7 +241,7 @@ struct PlanView: View {
               let rhr = json["restingHeartRate"] as? Double else { return nil }
         let score = Int(min(max(
             (hrv / 80) * 33 + (sleep / 8) * 33 + ((70 - rhr) / 30) * 34,
-            0), 100))
+            0), 100).rounded())
         return "Recovery \(score)"
     }
 
