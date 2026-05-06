@@ -60,17 +60,9 @@ public struct MockWorkoutScheduler: WorkoutScheduling {
         ) async throws -> ScheduledWorkout {
             // Build a custom workout from our exercise list.
             // Map each exercise into a workout block with a time-based goal.
+            let minutesPer = Double(durationMin) / Double(max(exercises.count, 1))
             let blocks = exercises.map { exercise -> IntervalBlock in
-                let step = WorkoutStep(
-                    goal: .time(
-                        .minutes(Double(durationMin) / Double(max(exercises.count, 1))),
-                        .cumulative)
-                )
-                return IntervalBlock(
-                    steps: [step],
-                    iterations: 1,
-                    displayName: exercise.name
-                )
+                self.makeBlock(exercise: exercise, minutesPer: minutesPer)
             }
 
             let customWorkout = CustomWorkout(
@@ -103,6 +95,20 @@ public struct MockWorkoutScheduler: WorkoutScheduling {
             return ScheduledWorkout(
                 scheduled: true,
                 workoutId: plan.id.uuidString
+            )
+        }
+
+        private func makeBlock(
+            exercise: CanonicalRun.Exercise,
+            minutesPer: Double
+        ) -> IntervalBlock {
+            let step = WorkoutStep(
+                goal: .time(.minutes(minutesPer), .cumulative)
+            )
+            return IntervalBlock(
+                steps: [step],
+                iterations: 1,
+                displayName: exercise.name
             )
         }
     }
