@@ -103,12 +103,12 @@ public struct MockWorkoutScheduler: WorkoutScheduling {
             minutesPer: Double
         ) -> IntervalBlock {
             let step = WorkoutStep(
-                goal: .time(.minutes(minutesPer), .cumulative)
+                goal: .time(minutesPer, .minutes)
             )
+            let intervalStep = IntervalStep(.work, step: step)
             return IntervalBlock(
-                steps: [step],
-                iterations: 1,
-                displayName: exercise.name
+                steps: [intervalStep],
+                iterations: 1
             )
         }
     }
