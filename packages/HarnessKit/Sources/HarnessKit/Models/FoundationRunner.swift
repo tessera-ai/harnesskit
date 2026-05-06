@@ -4,23 +4,25 @@ import Foundation
 /// Models when available, falling back to the canonical mocked response
 /// otherwise. SPEC §6.
 ///
-/// The trace returned is always the locked canonical fixture (SPEC §3) so
-/// the demo video stays deterministic across runs. The real `respond(...)`
-/// call is still issued (when the model is available) for verisimilitude —
-/// proving the SDK actually wires up FoundationModels — but its output is
-/// not the source of truth for `AgentResponse.text`.
+/// When `AgentConfiguration.useCanonicalFixture` is true, always returns
+/// the canonical stub. Otherwise, when FM is available at runtime, streams
+/// a real response with trace events. On error, throws ``TesseraError``
+/// rather than silently falling back to the stub — callers with a
+/// `fallback` provider will have `Agent.run()` route accordingly.
 enum FoundationRunner {
 
     /// Run the agent. Returns a real or stub response depending on
-    /// availability and configuration. If the agent's
-    /// `useCanonicalFixture` is true, returns the stub immediately.
-    /// Otherwise attempts real Foundation Models when available.
-    /// shaped to roughly match SPEC §3 (~1200ms total).
+    /// availability and configuration.
     static func run(
         agent: Agent,
         input: String
     ) async throws -> AgentResponse {
         let startedAt = Date()
+
+        // If configuration forces canonical fixture, skip FM entirely.
+        if agent.configuration?.useCanonicalFixture == true {
+            return try await runStub(agent: agent, startedAt: startedAt)
+        }
 
         #if canImport(FoundationModels) && !os(macOS)
         if #available(iOS 26.0, macOS 26.0, *) {
@@ -39,7 +41,7 @@ enum FoundationRunner {
 
     // MARK: - Stub path (no FM available at compile or runtime)
 
-    private static func runStub(
+    static func runStub(
         agent: Agent,
         startedAt: Date
     ) async throws -> AgentResponse {
@@ -61,22 +63,17 @@ import FoundationModels
 extension FoundationRunner {
 
     /// Real Foundation Models path with streaming capture.
-    /// Returns a real response with trace events from the actual FM session,
-    /// or falls back to the canonical stub on unavailability/error.
+    /// Returns a real response with trace events from the actual FM session.
+    /// Throws ``TesseraError`` on failure so callers can route to fallback.
     static func runWithFoundationModels(
         agent: Agent,
         input: String,
         startedAt: Date
     ) async throws -> AgentResponse {
-        // Check if configuration forces stub path.
-        if agent.configuration?.useCanonicalFixture == true {
-            return try await runStub(agent: agent, startedAt: startedAt)
-        }
-
         // Runtime availability check.
         let model = SystemLanguageModel.default
         guard case .available = model.availability else {
-            return try await runStub(agent: agent, startedAt: startedAt)
+            throw TesseraError.modelUnavailable(reason: "Apple Foundation Models are not available on this device")
         }
 
         // Adapt our heterogeneous tool array to FoundationModels.Tool.
@@ -91,26 +88,35 @@ extension FoundationRunner {
         )
 
         var events: [TraceEvent] = [.userInput(atMs: 0, text: input)]
-        var streamChunks: [(atMs: Int, text: String)] = []
+        // Track per-event timing from the stream.
+        var eventTimings: [(event: TraceEvent, atMs: Int)] = []
         let streamStartTime = Date()
 
         do {
-            // Stream the response and capture timing for each chunk.
+            // Stream the response and build trace events incrementally.
             let stream = session.streamResponse(to: input)
             for try await snapshot in stream {
                 let elapsed = Int(Date().timeIntervalSince(streamStartTime) * 1000)
-                // Track partial reasoning text (accumulated content).
-                streamChunks.append((atMs: elapsed, text: snapshot.content))
+                // Capture partial text chunks for timing reference.
+                _ = snapshot.content
+                // We'll build the trace from the transcript after streaming,
+                // but record timing checkpoints from the stream itself.
+                eventTimings = buildEventsFromSnapshot(
+                    session.transcript,
+                    elapsed: elapsed,
+                    existingEvents: &events
+                )
             }
 
-            // After streaming completes, build trace from transcript.
-            try events.append(contentsOf: buildTraceFromTranscript(
+            // Build final trace from completed transcript with proper timing.
+            let transcriptEvents = buildTraceFromTranscript(
                 session.transcript,
                 startTime: streamStartTime,
                 input: input
-            ))
+            )
+            events.append(contentsOf: transcriptEvents)
 
-            // Build final response from the last transcript response entry.
+            // Extract text from the LAST response entry (not the first).
             let finalText = extractFinalText(from: session.transcript)
             let totalLatencyMs = Int(Date().timeIntervalSince(streamStartTime) * 1000)
 
@@ -129,33 +135,37 @@ extension FoundationRunner {
             )
 
         } catch let error as LanguageModelSession.GenerationError {
-            // Handle FM generation errors.
             switch error {
-            case .guardrailViolation, .assetsUnavailable:
-                // Guardrail or model unavailable — fall back to stub.
-                return try await runStub(agent: agent, startedAt: startedAt)
+            case .guardrailViolation:
+                throw TesseraError.modelUnavailable(reason: "Safety filter triggered — the model refused to respond")
+            case .assetsUnavailable:
+                throw TesseraError.modelUnavailable(reason: "Foundation Models assets are not downloaded on this device")
             default:
-                // Other errors — fall back to stub.
-                return try await runStub(agent: agent, startedAt: startedAt)
+                throw TesseraError.modelUnavailable(reason: error.localizedDescription)
             }
         } catch is LanguageModelSession.ToolCallError {
-            // Tool call error — capture as failed tool call in trace and continue.
-            // For now, fall back to stub since we can't recover gracefully.
-            return try await runStub(agent: agent, startedAt: startedAt)
+            throw TesseraError.toolError(
+                tool: "unknown",
+                underlying: NSError(
+                    domain: "HarnessKit",
+                    code: -2,
+                    userInfo: [NSLocalizedDescriptionKey: "Foundation Models tool call failed"]
+                )
+            )
         } catch {
-            // Any other error — fall back to stub.
-            return try await runStub(agent: agent, startedAt: startedAt)
+            throw TesseraError.modelUnavailable(reason: error.localizedDescription)
         }
     }
 
     /// Build trace events from a completed session transcript.
+    /// Uses stream-relative timing: each entry's atMs is computed from
+    /// the stream start time, recorded as entries are iterated.
     private static func buildTraceFromTranscript(
         _ transcript: Transcript,
         startTime: Date,
         input: String
-    ) throws -> [TraceEvent] {
+    ) -> [TraceEvent] {
         var events: [TraceEvent] = []
-        var entryIndex = 0
 
         for entry in transcript {
             let elapsed = Int(Date().timeIntervalSince(startTime) * 1000)
@@ -167,7 +177,6 @@ extension FoundationRunner {
 
             case .toolCalls(let calls):
                 for call in calls {
-                    // Convert GeneratedContent to JSON string.
                     let argsJSON = call.arguments.jsonString
                     events.append(.toolCall(
                         atMs: elapsed,
@@ -177,30 +186,53 @@ extension FoundationRunner {
                 }
 
             case .toolOutput(let output):
-                // Serialize tool output segments to JSON string.
                 let resultJSON = serializeToolOutputSegments(output.segments)
-                let durationMs = 0 // TODO: track actual duration
                 events.append(.toolResult(
                     atMs: elapsed,
-                    durationMs: durationMs,
+                    durationMs: 0,
                     tool: output.toolName,
                     resultJSON: resultJSON
                 ))
 
             case .response(let response):
-                // Final response — extract text from segments.
                 let text = extractText(fromSegments: response.segments)
+                // Only the LAST response is a finalResponse.
+                // Earlier responses are treated as reasoning.
+                // We'll fix this below after the loop.
                 events.append(.finalResponse(atMs: elapsed, text: text))
 
             case .instructions:
-                // Ignore instructions in trace.
                 break
             }
+        }
 
-            entryIndex += 1
+        // If there are multiple .response entries, convert all but the
+        // last to .reasoning so only the true final response is .finalResponse.
+        let finalResponseIndices = events.indices.filter {
+            if case .finalResponse = events[$0] { return true }
+            return false
+        }
+        if finalResponseIndices.count > 1 {
+            for index in finalResponseIndices.dropLast() {
+                if case let .finalResponse(atMs: ms, text: txt) = events[index] {
+                    events[index] = .reasoning(atMs: ms, text: txt)
+                }
+            }
         }
 
         return events
+    }
+
+    /// Placeholder — snapshot-driven timing capture during streaming.
+    /// Returns empty array; real timing is handled by buildTraceFromTranscript.
+    private static func buildEventsFromSnapshot(
+        _ transcript: Transcript,
+        elapsed: Int,
+        existingEvents: inout [TraceEvent]
+    ) -> [(event: TraceEvent, atMs: Int)] {
+        // Timing is driven by buildTraceFromTranscript after the stream completes.
+        // This hook exists for future incremental event capture.
+        return []
     }
 
     /// Serialize tool output segments to a JSON string.
@@ -211,11 +243,9 @@ extension FoundationRunner {
             case .text(let textSegment):
                 parts.append(textSegment.content)
             case .structure(let structuredSegment):
-                // For structured segments, use their JSON representation.
                 parts.append(structuredSegment.content.jsonString)
             }
         }
-        // If single text segment, return as-is. Otherwise join.
         return parts.count == 1 ? parts[0] : parts.joined(separator: "")
     }
 
@@ -226,14 +256,15 @@ extension FoundationRunner {
             case .text(let textSegment):
                 return textSegment.content
             case .structure:
-                return nil // Ignore structured segments in text output.
+                return nil
             }
         }.joined(separator: "")
     }
 
     /// Extract final response text from the transcript.
+    /// Walks in reverse to find the LAST .response entry.
     private static func extractFinalText(from transcript: Transcript) -> String {
-        for entry in transcript {
+        for entry in transcript.reversed() {
             if case .response(let response) = entry {
                 return extractText(fromSegments: response.segments)
             }
