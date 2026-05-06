@@ -207,6 +207,8 @@ enum FoundationRunner {
 
                 case .instructions:
                     break
+                @unknown default:
+                    break
                 }
             }
 
@@ -248,6 +250,8 @@ enum FoundationRunner {
                     parts.append(textSegment.content)
                 case .structure(let structuredSegment):
                     parts.append(structuredSegment.content.jsonString)
+                @unknown default:
+                    break
                 }
             }
             return parts.count == 1 ? parts[0] : parts.joined(separator: "")
@@ -260,6 +264,8 @@ enum FoundationRunner {
                 case .text(let textSegment):
                     return textSegment.content
                 case .structure:
+                    return nil
+                @unknown default:
                     return nil
                 }
             }.joined(separator: "")
