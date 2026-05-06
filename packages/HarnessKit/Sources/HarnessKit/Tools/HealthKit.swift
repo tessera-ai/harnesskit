@@ -20,9 +20,10 @@ public enum HealthKit {
 
     /// Variadic factory matching the hero-shot signature:
     /// `HealthKit.read(.hrv, .sleep, .restingHeartRate)`.
-    /// Uses ``MockHealthDataProvider`` by default.
+    /// Uses ``LiveHealthDataProvider`` on iOS (real HealthKit),
+    /// ``MockHealthDataProvider`` on macOS (no HealthKit).
     public static func read(_ metrics: Metric...) -> any Tool {
-        HealthKitReadTool(metrics: metrics, provider: MockHealthDataProvider())
+        HealthKitReadTool(metrics: metrics, provider: resolveProvider())
     }
 
     /// Factory with explicit provider for dependency injection.
@@ -31,6 +32,15 @@ public enum HealthKit {
         provider: any HealthDataProvider
     ) -> any Tool {
         HealthKitReadTool(metrics: metrics, provider: provider)
+    }
+
+    /// Returns the live provider on iOS, mock on macOS.
+    private static func resolveProvider() -> any HealthDataProvider {
+        #if canImport(HealthKit) && !os(macOS)
+        return LiveHealthDataProvider()
+        #else
+        return MockHealthDataProvider()
+        #endif
     }
 }
 
