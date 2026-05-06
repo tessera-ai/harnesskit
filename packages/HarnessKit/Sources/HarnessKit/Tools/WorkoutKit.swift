@@ -11,13 +11,13 @@ public enum WorkoutKit {
 
     /// Factory with explicit scheduler for dependency injection.
     public static func schedule(
-        scheduler: WorkoutScheduler
+        scheduler: WorkoutScheduling
     ) -> any Tool {
         WorkoutKitScheduleTool(scheduler: scheduler)
     }
 
     /// Returns the live scheduler on iOS, mock on macOS.
-    private static func resolveScheduler() -> WorkoutScheduler {
+    private static func resolveScheduler() -> WorkoutScheduling {
         #if canImport(WorkoutKit) && !os(macOS)
             return LiveWorkoutScheduler()
         #else
@@ -27,9 +27,9 @@ public enum WorkoutKit {
 }
 
 public struct WorkoutKitScheduleTool: Tool {
-    private let scheduler: WorkoutScheduler
+    private let scheduler: WorkoutScheduling
 
-    public init(scheduler: WorkoutScheduler = MockWorkoutScheduler()) {
+    public init(scheduler: WorkoutScheduling = MockWorkoutScheduler()) {
         self.scheduler = scheduler
     }
 

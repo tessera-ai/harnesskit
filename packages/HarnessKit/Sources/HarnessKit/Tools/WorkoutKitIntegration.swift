@@ -13,11 +13,11 @@ public struct ScheduledWorkout: Sendable, Codable {
     }
 }
 
-// MARK: - WorkoutScheduler protocol
+// MARK: - WorkoutScheduling protocol
 
 /// Abstracts workout scheduling so tests can inject a mock and the live
 /// app uses Apple's WorkoutKit framework.
-public protocol WorkoutScheduler: Sendable {
+public protocol WorkoutScheduling: Sendable {
     func schedule(
         exercises: [CanonicalRun.Exercise],
         time: String,
@@ -29,7 +29,7 @@ public protocol WorkoutScheduler: Sendable {
 
 /// Returns the canonical fixture — keeps tests deterministic and backward-
 /// compatible with the demo trace.
-public struct MockWorkoutScheduler: WorkoutScheduler {
+public struct MockWorkoutScheduler: WorkoutScheduling {
     public init() {}
 
     public func schedule(
@@ -49,8 +49,8 @@ public struct MockWorkoutScheduler: WorkoutScheduler {
     /// Thin wrapper around Apple's WorkoutKit scheduler.
     ///
     /// Maps HarnessKit exercises into a `CustomWorkout` wrapped in a
-    /// `WorkoutPlan`, then schedules via `WorkoutScheduler.shared`.
-    public struct LiveWorkoutScheduler: WorkoutScheduler {
+    /// `WorkoutPlan`, then schedules via Apple's `WorkoutScheduler.shared`.
+    public struct LiveWorkoutScheduler: WorkoutScheduling {
         public init() {}
 
         public func schedule(
@@ -60,7 +60,7 @@ public struct MockWorkoutScheduler: WorkoutScheduler {
         ) async throws -> ScheduledWorkout {
             // Build a custom workout from our exercise list.
             // Map each exercise into a workout block with a time-based goal.
-            let blocks: [IntervalBlock] = exercises.map { exercise in
+            let blocks = exercises.map { exercise -> IntervalBlock in
                 let step = WorkoutStep(
                     goal: .time(
                         .minutes(Double(durationMin) / Double(max(exercises.count, 1))),
@@ -97,8 +97,7 @@ public struct MockWorkoutScheduler: WorkoutScheduler {
             }
             dateComponents.calendar = Calendar.current
 
-            let scheduler = WorkoutScheduler.shared
-            try await scheduler.schedule(plan, at: dateComponents)
+            try await WorkoutScheduler.shared.schedule(plan, at: dateComponents)
 
             // schedule(_:at:) returns Void on success. Use the plan's id.
             return ScheduledWorkout(
