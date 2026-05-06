@@ -14,20 +14,17 @@ let package = Package(
         )
     ],
     targets: [
-    .target(
-        name: "Tessera",
-        path: "Sources/HarnessKit",
-        linkerSettings: [
-            .unsafeFlags(["-Xlinker", "-weak_framework", "-Xlinker", "FoundationModels"])
-        ]
-    ),
-    .testTarget(
-        name: "HarnessKitTests",
-        dependencies: ["Tessera"],
-        path: "Tests/HarnessKitTests",
-        linkerSettings: [
-            .unsafeFlags(["-Xlinker", "-weak_framework", "-Xlinker", "FoundationModels"])
-        ]
-    )
+        .target(
+            name: "Tessera",
+            path: "Sources/HarnessKit",
+            linkerSettings: [
+                .unsafeFlags(["-Xlinker", "-weak_framework", "-Xlinker", "FoundationModels"])
+            ]
+        ),
+        .testTarget(
+            name: "HarnessKitTests",
+            dependencies: ["Tessera"],
+            path: "Tests/HarnessKitTests"
+        )
     ]
 )
