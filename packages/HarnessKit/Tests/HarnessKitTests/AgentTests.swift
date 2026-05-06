@@ -238,4 +238,27 @@ final class AgentTests: XCTestCase {
         let explicitConfig = AgentConfiguration(useCanonicalFixture: true)
         XCTAssertTrue(explicitConfig.useCanonicalFixture)
     }
+
+    // MARK: - No tools registered
+
+    func testRunWithNoToolsThrowsNoToolsRegistered() async {
+        let coach = Agent(
+            name: "EmptyCoach",
+            instructions: "No tools",
+            tools: [],
+            model: .onDevice(.foundation)
+        )
+        do {
+            _ = try await coach.run("Hello")
+            XCTFail("Expected TesseraError.noToolsRegistered")
+        } catch let error as TesseraError {
+            if case .noToolsRegistered = error {
+                // Correct
+            } else {
+                XCTFail("Expected .noToolsRegistered, got \(error)")
+            }
+        } catch {
+            XCTFail("Expected TesseraError, got \(error)")
+        }
+    }
 }
