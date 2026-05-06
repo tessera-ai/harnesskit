@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  push:
+    branches: [main, feat/*]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # Swift SDK build + test (macOS)
+  swift-sdk:
+    name: Swift SDK (build + test)
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache Swift Package Manager
+        uses: actions/cache@v4
+        with:
+          path: packages/HarnessKit/.build
+          key: ${{ runner.os }}-spm-${{ hashFiles('packages/HarnessKit/Package.swift') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+
+      - name: Build
+        run: |
+          cd packages/HarnessKit
+          swift build
+
+      - name: Test
+        run: |
+          cd packages/HarnessKit
+          swift test --enable-code-coverage
+
+      - name: Report test coverage
+        run: |
+          xcrun llvm-cov report \
+            .build/debug/codecov/*.profdata \
+            --instr-profile=.build/debug/codecov/default.profdata \
+            > coverage.txt
+          cat coverage.txt
+
+  # iOS app build (Forge)
+  ios-app:
+    name: Forge (Xcode build)
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache Xcode derived data
+        uses: actions/cache@v4
+        with:
+          path: apps/Forge/DerivedData
+          key: ${{ runner.os }}-xcode-dd-${{ hashFiles('apps/Forge/project.yml') }}
+
+      - name: Generate Xcode project
+        run: |
+          cd apps/Forge
+          xcodegen generate
+
+      - name: Build for iOS Simulator
+        run: |
+          cd apps/Forge
+          xcodebuild \
+            -project Forge.xcodeproj \
+            -scheme Forge \
+            -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=latest' \
+            clean build \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+
+  # Dashboard build + lint (Next.js)
+  dashboard:
+    name: Dashboard (build + lint)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: apps/dashboard/package-lock.json
+
+      - name: Install dependencies
+        working-directory: apps/dashboard
+        run: npm ci
+
+      - name: Lint
+        working-directory: apps/dashboard
+        run: npm run lint
+
+      - name: Build
+        working-directory: apps/dashboard
+        run: npm run build
