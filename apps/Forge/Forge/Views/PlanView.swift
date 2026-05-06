@@ -14,8 +14,8 @@ struct PlanView: View {
 
     struct HealthSignals {
         let recovery: String?  // e.g. "Recovery 72"
-        let load: String?      // e.g. "Load -8% / 7d"
-        let vo2: String?       // e.g. "VO₂ 47.2"
+        let load: String?  // e.g. "Load -8% / 7d"
+        let vo2: String?  // e.g. "VO₂ 47.2"
 
         static let empty = Self(recovery: nil, load: nil, vo2: nil)
     }
@@ -99,6 +99,7 @@ struct PlanView: View {
         VStack(spacing: Spacing.base) {
             ForEach(Array(exercises.enumerated()), id: \.offset) { _, ex in
                 exerciseRow(ex)
+            }
         }
     }
 
@@ -144,9 +145,10 @@ struct PlanView: View {
     private var egressFooter: some View {
         HStack {
             Spacer()
-            PillLabel(text: "0 bytes left your device",
-                      systemImage: "lock.shield.fill",
-                      variant: .subtle)
+            PillLabel(
+                text: "0 bytes left your device",
+                systemImage: "lock.shield.fill",
+                variant: .subtle)
             Spacer()
         }
     }
@@ -166,8 +168,9 @@ struct PlanView: View {
             Capsule().fill(Color.softCardFill)
         )
         .overlay(Capsule().stroke(Color.white.opacity(0.39), lineWidth: 1).blendMode(.overlay))
-        .shadow(color: Color(red: 97/255, green: 110/255, blue: 124/255).opacity(0.114),
-                radius: 15, x: 0, y: 4)
+        .shadow(
+            color: Color(red: 97 / 255, green: 110 / 255, blue: 124 / 255).opacity(0.114),
+            radius: 15, x: 0, y: 4)
     }
 
     // MARK: - Toast lifecycle
@@ -192,13 +195,15 @@ struct PlanView: View {
 
     private static func parseExercises(from trace: AgentTrace) -> [CanonicalRun.Exercise] {
         for event in trace.events {
-            if case let .toolCall(_, tool, argsJSON) = event,
-               tool == "workoutkit_schedule" {
+            if case .toolCall(_, let tool, let argsJSON) = event,
+                tool == "workoutkit_schedule"
+            {
                 struct Args: Decodable {
                     let exercises: [CanonicalRun.Exercise]
                 }
                 if let data = argsJSON.data(using: .utf8),
-                   let args = try? JSONDecoder().decode(Args.self, from: data) {
+                    let args = try? JSONDecoder().decode(Args.self, from: data)
+                {
                     return args.exercises
                 }
             }
@@ -212,11 +217,13 @@ struct PlanView: View {
         var vo2: String?
 
         for event in trace.events {
-            guard case let .toolResult(_, _, tool, resultJSON) = event,
-                  tool == "healthkit_read" else { continue }
+            guard case .toolResult(_, _, let tool, let resultJSON) = event,
+                tool == "healthkit_read"
+            else { continue }
 
             if let data = resultJSON.data(using: .utf8),
-               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+            {
 
                 if json["hrv"] != nil {
                     recovery = parseRecovery(from: json)
@@ -231,17 +238,23 @@ struct PlanView: View {
         }
 
         let hasAny = recovery != nil || load != nil || vo2 != nil
-        return hasAny ? HealthSignals(recovery: recovery, load: load, vo2: vo2) : nil
-            ?? HealthSignals(recovery: "Recovery 72", load: "Load -8% / 7d", vo2: "VO₂ 47.2")
+        return hasAny
+            ? HealthSignals(recovery: recovery, load: load, vo2: vo2)
+            : nil
+                ?? HealthSignals(recovery: "Recovery 72", load: "Load -8% / 7d", vo2: "VO₂ 47.2")
     }
 
     private static func parseRecovery(from json: [String: Any]) -> String? {
         guard let hrv = json["hrv"] as? Double,
-              let sleep = json["sleep"] as? Double,
-              let rhr = json["restingHeartRate"] as? Double else { return nil }
-        let score = Int(min(max(
-            (hrv / 80) * 33 + (sleep / 8) * 33 + ((70 - rhr) / 30) * 34,
-            0), 100).rounded())
+            let sleep = json["sleep"] as? Double,
+            let rhr = json["restingHeartRate"] as? Double
+        else { return nil }
+        let score = Int(
+            min(
+                max(
+                    (hrv / 80) * 33 + (sleep / 8) * 33 + ((70 - rhr) / 30) * 34,
+                    0), 100
+            ).rounded())
         return "Recovery \(score)"
     }
 

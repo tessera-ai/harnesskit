@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import Tessera
 
 final class ToolContractTests: XCTestCase {

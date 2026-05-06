@@ -91,10 +91,13 @@ struct SoftCardModifier: ViewModifier {
                     .stroke(Color.white.opacity(0.39), lineWidth: 1)
                     .blendMode(.overlay)
             )
-            .shadow(color: Color(red: 97/255, green: 110/255, blue: 124/255).opacity(0.114),
-                    radius: 15, x: 0, y: 4)
-            .shadow(color: Color(red: 34/255, green: 50/255, blue: 94/255).opacity(0.08),
-                    radius: 1, x: 0, y: 1)
+            .shadow(
+                color: Color(red: 97 / 255, green: 110 / 255, blue: 124 / 255).opacity(0.114),
+                radius: 15, x: 0, y: 4
+            )
+            .shadow(
+                color: Color(red: 34 / 255, green: 50 / 255, blue: 94 / 255).opacity(0.08),
+                radius: 1, x: 0, y: 1)
     }
 }
 

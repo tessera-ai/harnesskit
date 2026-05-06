@@ -2,7 +2,7 @@ name: Forge
 options:
   bundleIdPrefix: com.harnesskit
   deploymentTarget:
-    iOS: "26.0"
+    iOS: "17.0"
   createIntermediateGroups: true
 packages:
   Tessera:
@@ -11,7 +11,7 @@ targets:
   Forge:
     type: application
     platform: iOS
-    deploymentTarget: "26.0"
+    deploymentTarget: "17.0"
     sources:
       - Forge
     dependencies:

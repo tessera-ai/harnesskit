@@ -7,6 +7,25 @@ on:
     branches: [main]
 
 jobs:
+  # Swift format check
+  swift-format:
+    name: Swift format check
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install swift-format
+        run: brew install swift-format
+
+      - name: Check formatting
+        run: |
+          find packages apps \
+            \( -path '*/.build' -o -path '*/DerivedData' \) -prune -o \
+            -name '*.swift' -print0 \
+            | xargs -0 swift-format lint --strict --parallel
+          echo "All Swift files pass format check"
+
   # iOS app build (Forge)
   ios-app:
     name: Forge (Xcode build)
@@ -29,7 +48,7 @@ jobs:
           xcodebuild \
             -project Forge.xcodeproj \
             -scheme Forge \
-            -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=latest' \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
             clean build \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \

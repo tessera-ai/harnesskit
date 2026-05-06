@@ -54,7 +54,7 @@ public enum CanonicalRun {
         .init(name: "Back Squat", detail: "4 × 5 @ 85%"),
         .init(name: "Romanian Deadlift", detail: "3 × 8 @ 70%"),
         .init(name: "Bulgarian Split Squat", detail: "3 × 10 each leg"),
-        .init(name: "Cooldown", detail: "5 min Zone 2")
+        .init(name: "Cooldown", detail: "5 min Zone 2"),
     ]
 
     public static let scheduleTime = "18:00"
@@ -113,7 +113,7 @@ public enum CanonicalRun {
                 tool: "workoutkit_schedule",
                 resultJSON: workoutkitResultJSON
             ),
-            .finalResponse(atMs: 1200, text: finalText)
+            .finalResponse(atMs: 1200, text: finalText),
         ]
     }
 

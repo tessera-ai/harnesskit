@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import Tessera
 
 final class CanonicalRunTests: XCTestCase {
@@ -40,10 +41,12 @@ final class CanonicalRunTests: XCTestCase {
             }
         }
 
-        XCTAssertEqual(toolCallNames.count, toolResultNames.count,
+        XCTAssertEqual(
+            toolCallNames.count, toolResultNames.count,
             "Every tool call must have a matching tool result")
         for (i, callName) in toolCallNames.enumerated() {
-            XCTAssertEqual(callName, toolResultNames[i],
+            XCTAssertEqual(
+                callName, toolResultNames[i],
                 "Tool call[\(i)] (\(callName)) must match result[\(i)] (\(toolResultNames[i]))")
         }
     }
@@ -66,7 +69,7 @@ final class CanonicalRunTests: XCTestCase {
     // MARK: - makeResponse() trace matches makeTrace() structure
 
     func testMakeResponseMatchesMakeTraceStructure() {
-        let startedAt = Date(timeIntervalSince1970: 1700000000)
+        let startedAt = Date(timeIntervalSince1970: 1_700_000_000)
         let response = CanonicalRun.makeResponse(
             agentName: "TestAgent",
             modelLabel: "TestModel",
@@ -94,25 +97,28 @@ final class CanonicalRunTests: XCTestCase {
 
     func testHealthKitFixtureValuesMatchSpec() throws {
         // Read 1 — recovery snapshot
-        let result1 = try JSONSerialization.jsonObject(
-            with: Data(CanonicalRun.healthkitResult1JSON.utf8)
-        ) as! [String: Any]
+        let result1 =
+            try JSONSerialization.jsonObject(
+                with: Data(CanonicalRun.healthkitResult1JSON.utf8)
+            ) as! [String: Any]
         XCTAssertEqual(result1["hrv"] as? Int, 58)
         XCTAssertEqual(result1["sleep"] as? Double, 7.2)
         XCTAssertEqual(result1["restingHeartRate"] as? Int, 54)
 
         // Read 2 — training load
-        let result2 = try JSONSerialization.jsonObject(
-            with: Data(CanonicalRun.healthkitResult2JSON.utf8)
-        ) as! [String: Any]
+        let result2 =
+            try JSONSerialization.jsonObject(
+                with: Data(CanonicalRun.healthkitResult2JSON.utf8)
+            ) as! [String: Any]
         XCTAssertEqual(result2["activeEnergy"] as? Int, 11200)
         XCTAssertEqual(result2["window"] as? String, "7d")
         XCTAssertEqual(result2["deltaVsPriorPct"] as? Int, -8)
 
         // Read 3 — VO₂ Max
-        let result3 = try JSONSerialization.jsonObject(
-            with: Data(CanonicalRun.healthkitResult3JSON.utf8)
-        ) as! [String: Any]
+        let result3 =
+            try JSONSerialization.jsonObject(
+                with: Data(CanonicalRun.healthkitResult3JSON.utf8)
+            ) as! [String: Any]
         XCTAssertEqual(result3["vo2Max"] as? Double, 47.2)
         XCTAssertEqual(result3["zone2BpmRange"] as? [Int], [130, 145])
     }
@@ -120,9 +126,10 @@ final class CanonicalRunTests: XCTestCase {
     // MARK: - WorkoutKit fixture values match SPEC §3
 
     func testWorkoutKitFixtureValuesMatchSpec() throws {
-        let args = try JSONSerialization.jsonObject(
-            with: Data(CanonicalRun.workoutkitArgsJSON.utf8)
-        ) as! [String: Any]
+        let args =
+            try JSONSerialization.jsonObject(
+                with: Data(CanonicalRun.workoutkitArgsJSON.utf8)
+            ) as! [String: Any]
 
         let exercises = args["exercises"] as! [[String: String]]
         XCTAssertEqual(exercises.count, 4)
@@ -134,9 +141,10 @@ final class CanonicalRunTests: XCTestCase {
         XCTAssertEqual(args["time"] as? String, "18:00")
         XCTAssertEqual(args["durationMin"] as? Int, 45)
 
-        let result = try JSONSerialization.jsonObject(
-            with: Data(CanonicalRun.workoutkitResultJSON.utf8)
-        ) as! [String: Any]
+        let result =
+            try JSONSerialization.jsonObject(
+                with: Data(CanonicalRun.workoutkitResultJSON.utf8)
+            ) as! [String: Any]
         XCTAssertEqual(result["scheduled"] as? Bool, true)
         XCTAssertEqual(result["workoutId"] as? String, "wk_a1b2c3")
     }

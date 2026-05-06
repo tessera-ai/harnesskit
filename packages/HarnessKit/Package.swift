@@ -4,8 +4,8 @@ import PackageDescription
 let package = Package(
     name: "Tessera",
     platforms: [
-        .iOS("26.0"),
-        .macOS("26.0")
+        .iOS(.v17),
+        .macOS(.v14),
     ],
     products: [
         .library(
@@ -16,15 +16,12 @@ let package = Package(
     targets: [
         .target(
             name: "Tessera",
-            path: "Sources/HarnessKit",
-            linkerSettings: [
-                .unsafeFlags(["-Xlinker", "-weak_framework", "-Xlinker", "FoundationModels"])
-            ]
+            path: "Sources/HarnessKit"
         ),
         .testTarget(
             name: "HarnessKitTests",
             dependencies: ["Tessera"],
-            path: "Tests/HarnessKitTests"
-        )
+            path: "Tests/HarnessKitTests",
+        ),
     ]
 )

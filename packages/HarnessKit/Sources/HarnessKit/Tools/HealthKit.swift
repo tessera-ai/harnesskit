@@ -37,9 +37,9 @@ public enum HealthKit {
     /// Returns the live provider on iOS, mock on macOS.
     private static func resolveProvider() -> any HealthDataProvider {
         #if canImport(HealthKit) && !os(macOS)
-        return LiveHealthDataProvider()
+            return LiveHealthDataProvider()
         #else
-        return MockHealthDataProvider()
+            return MockHealthDataProvider()
         #endif
     }
 }

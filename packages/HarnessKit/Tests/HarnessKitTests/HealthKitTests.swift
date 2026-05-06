@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import Tessera
 
 final class HealthKitTests: XCTestCase {
@@ -62,7 +63,6 @@ final class HealthKitTests: XCTestCase {
         XCTAssertTrue(result.contains("\"activeEnergy\":11200"))
         XCTAssertTrue(result.contains("\"window\":\"7d\""))
     }
-
 
     func testToolWithVO2MaxReturnsZone2Range() async throws {
         let tool = HealthKit.read(.vo2Max)
