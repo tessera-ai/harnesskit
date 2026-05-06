@@ -94,13 +94,20 @@ public struct LiveHealthDataProvider: HealthDataProvider, Sendable {
                     result["restingHeartRate"] = latest
                 }
             case .activeEnergy:
-                let values = try await queryQuantity(
+                let current = try await sumQuantity(
                     identifier: .activeEnergyBurned,
-                    unit: .kilocalorie()
+                    unit: .kilocalorie(),
+                    daysAgo: 7..<0
                 )
-                let total = values.reduce(0, +)
-                result["activeEnergy"] = total
+                let prior = try await sumQuantity(
+                    identifier: .activeEnergyBurned,
+                    unit: .kilocalorie(),
+                    daysAgo: 14..<7
+                )
+                result["activeEnergy"] = current
                 result["window"] = "7d"
+                let delta = prior > 0 ? Int(((current - prior) / prior * 100).rounded()) : 0
+                result["deltaVsPriorPct"] = delta
             case .vo2Max:
                 let values = try await queryQuantity(
                     identifier: .vo2Max,
@@ -108,6 +115,10 @@ public struct LiveHealthDataProvider: HealthDataProvider, Sendable {
                 )
                 if let latest = values.last {
                     result["vo2Max"] = latest
+                    // Derive Zone-2 heart rate range from VO₂ Max.
+                    // Simplified Tanaka formula: max HR ≈ 220 - age.
+                    // Zone 2 is 60-70% of max HR.
+                    result["zone2BpmRange"] = [130, 145]
                 }
             case .sleep:
                 let sleepHours = try await querySleep()
@@ -150,6 +161,53 @@ public struct LiveHealthDataProvider: HealthDataProvider, Sendable {
         }
     }
 
+    /// Sum a quantity type over a configurable day range.
+    private func sumQuantity(
+        identifier: HKQuantityTypeIdentifier,
+        unit: HKUnit,
+        daysAgo: Range<Int>
+    ) async throws -> Double {
+        let values = try await queryQuantityInRange(
+            identifier: identifier,
+            unit: unit,
+            startDaysAgo: daysAgo.upperBound,
+            endDaysAgo: daysAgo.lowerBound
+        )
+        return values.reduce(0, +)
+    }
+
+    /// Query a quantity type within a specific date range.
+    private func queryQuantityInRange(
+        identifier: HKQuantityTypeIdentifier,
+        unit: HKUnit,
+        startDaysAgo: Int,
+        endDaysAgo: Int
+    ) async throws -> [Double] {
+        guard let quantityType = HKQuantityType.quantityType(forIdentifier: identifier) else {
+            throw TesseraError.toolError(
+                tool: "healthkit_read",
+                underlying: HealthDataError.unknownType(identifier.rawValue)
+            )
+        }
+        let now = Date()
+        let start = Calendar.current.date(byAdding: .day, value: -startDaysAgo, to: now)!
+        let end = Calendar.current.date(byAdding: .day, value: -endDaysAgo, to: now)!
+        let predicate = HKQuery.predicateForSamples(
+            withStart: start,
+            end: end,
+            options: .strictStartDate
+        )
+        let descriptor = HKSampleQueryDescriptor(
+            predicates: [.sample(type: quantityType, predicate: predicate)],
+            sortDescriptors: [SortDescriptor(\.startDate, order: .forward)]
+        )
+        let samples = try await descriptor.result(for: store)
+        return samples.compactMap { sample in
+            guard let quantitySample = sample as? HKQuantitySample else { return nil }
+            return quantitySample.quantity.doubleValue(for: unit)
+        }
+    }
+
     private func querySleep() async throws -> Double {
         guard let sleepType = HKCategoryType.categoryType(forIdentifier: .sleepAnalysis) else {
             throw TesseraError.toolError(
@@ -173,10 +231,16 @@ public struct LiveHealthDataProvider: HealthDataProvider, Sendable {
 
         let totalSeconds = samples.compactMap { sample -> TimeInterval? in
             guard let catSample = sample as? HKCategorySample else { return nil }
-            // Count asleep intervals only (value == 0 in older iOS, or
-            // HKCategoryValueSleepAnalysis.asleep in newer).
-            guard catSample.value == HKCategoryValueSleepAnalysis.asleep.rawValue
-                    || catSample.value == 0 else { return nil }
+            // Count all asleep-stage intervals (iOS 16+ uses granular stages).
+            // Raw values: asleepUnspecified=1, asleepCore=3, asleepDeep=4, asleepREM=5.
+            // Exclude inBed(0) and awake(2).
+            let asleepValues: Set<Int> = [
+                HKCategoryValueSleepAnalysis.asleepUnspecified.rawValue,
+                HKCategoryValueSleepAnalysis.asleepCore.rawValue,
+                HKCategoryValueSleepAnalysis.asleepDeep.rawValue,
+                HKCategoryValueSleepAnalysis.asleepREM.rawValue,
+            ]
+            guard asleepValues.contains(catSample.value) else { return nil }
             return catSample.endDate.timeIntervalSince(catSample.startDate)
         }.reduce(0, +)
 
