@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import Tessera
 
 final class FoundationRunnerTests: XCTestCase {
@@ -85,7 +86,7 @@ final class FoundationRunnerTests: XCTestCase {
             instructions: "Plan today's lift",
             tools: [
                 HealthKit.read(.hrv, .sleep, .restingHeartRate),
-                WorkoutKit.schedule
+                WorkoutKit.schedule,
             ],
             model: .onDevice(.foundation)
         )

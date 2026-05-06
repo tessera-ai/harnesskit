@@ -19,9 +19,9 @@ public enum WorkoutKit {
     /// Returns the live scheduler on iOS, mock on macOS.
     private static func resolveScheduler() -> WorkoutScheduler {
         #if canImport(WorkoutKit) && !os(macOS)
-        return LiveWorkoutScheduler()
+            return LiveWorkoutScheduler()
         #else
-        return MockWorkoutScheduler()
+            return MockWorkoutScheduler()
         #endif
     }
 }

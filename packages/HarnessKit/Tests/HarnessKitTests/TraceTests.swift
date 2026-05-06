@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import Tessera
 
 final class TraceTests: XCTestCase {
@@ -51,7 +52,8 @@ final class TraceTests: XCTestCase {
     }
 
     func testToolResultCodableRoundTrip() throws {
-        let original = TraceEvent.toolResult(atMs: 300, durationMs: 100, tool: "healthkit_read", resultJSON: #"{"hrv":58}"#)
+        let original = TraceEvent.toolResult(
+            atMs: 300, durationMs: 100, tool: "healthkit_read", resultJSON: #"{"hrv":58}"#)
         let data = try encoder.encode(original)
         let decoded = try decoder.decode(TraceEvent.self, from: data)
         if case .toolResult(let atMs, let durationMs, let tool, let resultJSON) = decoded {

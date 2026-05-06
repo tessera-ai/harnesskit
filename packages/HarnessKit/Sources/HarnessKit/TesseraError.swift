@@ -74,16 +74,16 @@ extension TesseraError: Equatable {
     /// compared by their `localizedDescription` strings.
     public static func == (lhs: TesseraError, rhs: TesseraError) -> Bool {
         switch (lhs, rhs) {
-        case let (.modelUnavailable(a), .modelUnavailable(b)):
+        case (.modelUnavailable(let a), .modelUnavailable(let b)):
             a == b
-        case let (.toolError(tA, eA), .toolError(tB, eB)):
+        case (.toolError(let tA, let eA), .toolError(let tB, let eB)):
             tA == tB && eA.localizedDescription == eB.localizedDescription
-        case let (.fallbackFailed(pA, fA), .fallbackFailed(pB, fB)):
+        case (.fallbackFailed(let pA, let fA), .fallbackFailed(let pB, let fB)):
             pA.localizedDescription == pB.localizedDescription
                 && fA.localizedDescription == fB.localizedDescription
         case (.noToolsRegistered, .noToolsRegistered):
             true
-        case let (.invalidInput(a), .invalidInput(b)):
+        case (.invalidInput(let a), .invalidInput(let b)):
             a == b
         default:
             false

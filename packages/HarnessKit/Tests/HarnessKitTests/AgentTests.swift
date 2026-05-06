@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import Tessera
 
 final class AgentTests: XCTestCase {
@@ -13,7 +14,7 @@ final class AgentTests: XCTestCase {
             instructions: "Plan today's lift based on recovery.",
             tools: [
                 HealthKit.read(.hrv, .sleep, .restingHeartRate),
-                WorkoutKit.schedule
+                WorkoutKit.schedule,
             ],
             model: .onDevice(.foundation),
             fallback: .cloud(.claude)
@@ -35,7 +36,7 @@ final class AgentTests: XCTestCase {
             instructions: "Plan today's lift based on recovery.",
             tools: [
                 HealthKit.read(.hrv, .sleep, .restingHeartRate),
-                WorkoutKit.schedule
+                WorkoutKit.schedule,
             ],
             model: .onDevice(.foundation),
             fallback: .cloud(.claude)

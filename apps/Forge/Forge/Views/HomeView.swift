@@ -27,46 +27,70 @@ struct HomeView: View {
     /// Scripted trace lines (timing in seconds, monospaced text). Total
     /// animation duration ~5s. Symbols are SF Symbols (filled).
     private static let scriptedLines: [(delay: Double, line: TraceLine)] = [
-        (0.3, TraceLine(
-            symbol: "arrow.right.circle.fill",
-            text: "HealthKit.read · HRV, Sleep, RHR",
-            symbolColor: Color.luminescentViolet
-        )),
-        (0.9, TraceLine(
-            symbol: "checkmark.circle.fill",
-            text: "Recovery 72 / 100",
-            symbolColor: Color.luminescentViolet
-        )),
-        (1.5, TraceLine(
-            symbol: "arrow.right.circle.fill",
-            text: "HealthKit.read · Active Energy 7d",
-            symbolColor: Color.luminescentViolet
-        )),
-        (2.1, TraceLine(
-            symbol: "checkmark.circle.fill",
-            text: "Load -8% vs last week",
-            symbolColor: Color.luminescentViolet
-        )),
-        (2.7, TraceLine(
-            symbol: "arrow.right.circle.fill",
-            text: "HealthKit.read · VO₂ Max",
-            symbolColor: Color.luminescentViolet
-        )),
-        (3.3, TraceLine(
-            symbol: "checkmark.circle.fill",
-            text: "VO₂ 47.2 · Zone-2 130-145 bpm",
-            symbolColor: Color.luminescentViolet
-        )),
-        (3.9, TraceLine(
-            symbol: "arrow.right.circle.fill",
-            text: "WorkoutKit.schedule",
-            symbolColor: Color.luminescentViolet
-        )),
-        (4.6, TraceLine(
-            symbol: "checkmark.circle.fill",
-            text: "1.2s on-device · 0 bytes egressed",
-            symbolColor: Color.luminescentViolet
-        ))
+        (
+            0.3,
+            TraceLine(
+                symbol: "arrow.right.circle.fill",
+                text: "HealthKit.read · HRV, Sleep, RHR",
+                symbolColor: Color.luminescentViolet
+            )
+        ),
+        (
+            0.9,
+            TraceLine(
+                symbol: "checkmark.circle.fill",
+                text: "Recovery 72 / 100",
+                symbolColor: Color.luminescentViolet
+            )
+        ),
+        (
+            1.5,
+            TraceLine(
+                symbol: "arrow.right.circle.fill",
+                text: "HealthKit.read · Active Energy 7d",
+                symbolColor: Color.luminescentViolet
+            )
+        ),
+        (
+            2.1,
+            TraceLine(
+                symbol: "checkmark.circle.fill",
+                text: "Load -8% vs last week",
+                symbolColor: Color.luminescentViolet
+            )
+        ),
+        (
+            2.7,
+            TraceLine(
+                symbol: "arrow.right.circle.fill",
+                text: "HealthKit.read · VO₂ Max",
+                symbolColor: Color.luminescentViolet
+            )
+        ),
+        (
+            3.3,
+            TraceLine(
+                symbol: "checkmark.circle.fill",
+                text: "VO₂ 47.2 · Zone-2 130-145 bpm",
+                symbolColor: Color.luminescentViolet
+            )
+        ),
+        (
+            3.9,
+            TraceLine(
+                symbol: "arrow.right.circle.fill",
+                text: "WorkoutKit.schedule",
+                symbolColor: Color.luminescentViolet
+            )
+        ),
+        (
+            4.6,
+            TraceLine(
+                symbol: "checkmark.circle.fill",
+                text: "1.2s on-device · 0 bytes egressed",
+                symbolColor: Color.luminescentViolet
+            )
+        ),
     ]
 
     private static let animationFinishDelay: Double = 5.2
@@ -159,7 +183,9 @@ struct HomeView: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Forge needs access to your Health data to personalize workout plans. Please enable Health in Settings.")
+            Text(
+                "Forge needs access to your Health data to personalize workout plans. Please enable Health in Settings."
+            )
         }
     }
 
@@ -176,12 +202,14 @@ struct HomeView: View {
                 .tracking(-0.32)
                 .foregroundStyle(Color.graphite)
 
-            Text("Forge reads your recovery metrics — HRV, sleep, resting heart rate — and schedules workouts to keep everything in one place.")
-                .font(.body16)
-                .tracking(-0.26)
-                .foregroundStyle(Color.slate)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 8)
+            Text(
+                "Forge reads your recovery metrics — HRV, sleep, resting heart rate — and schedules workouts to keep everything in one place."
+            )
+            .font(.body16)
+            .tracking(-0.26)
+            .foregroundStyle(Color.slate)
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 8)
 
             Button {
                 requestHealthKitPermission()
