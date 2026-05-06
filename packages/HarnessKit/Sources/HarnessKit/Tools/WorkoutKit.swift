@@ -4,25 +4,41 @@ import Foundation
 /// Apple WorkoutKit framework — entitlement risk on a fresh demo build.
 public enum WorkoutKit {
     /// Hero-shot signature: `WorkoutKit.schedule` (computed property,
-    /// no parens). Returns a canned scheduling tool.
+    /// no parens). Uses ``LiveWorkoutScheduler`` on iOS, mock on macOS.
     public static var schedule: any Tool {
-        WorkoutKitScheduleTool()
+        WorkoutKitScheduleTool(scheduler: resolveScheduler())
+    }
+
+    /// Factory with explicit scheduler for dependency injection.
+    public static func schedule(
+        scheduler: WorkoutScheduler
+    ) -> any Tool {
+        WorkoutKitScheduleTool(scheduler: scheduler)
+    }
+
+    /// Returns the live scheduler on iOS, mock on macOS.
+    private static func resolveScheduler() -> WorkoutScheduler {
+        #if canImport(WorkoutKit) && !os(macOS)
+        return LiveWorkoutScheduler()
+        #else
+        return MockWorkoutScheduler()
+        #endif
     }
 }
 
-struct WorkoutKitScheduleTool: Tool {
+public struct WorkoutKitScheduleTool: Tool {
     private let scheduler: WorkoutScheduler
 
-    init(scheduler: WorkoutScheduler = MockWorkoutScheduler()) {
+    public init(scheduler: WorkoutScheduler = MockWorkoutScheduler()) {
         self.scheduler = scheduler
     }
 
-    var name: String { "workoutkit_schedule" }
-    var toolDescription: String {
-        "Schedule a strength workout in the user's calendar (mocked for demo)."
+    public var name: String { "workoutkit_schedule" }
+    public var toolDescription: String {
+        "Schedule a strength workout in the user's calendar."
     }
 
-    func invokeJSON(_ argsJSON: String) async throws -> String {
+    public func invokeJSON(_ argsJSON: String) async throws -> String {
         struct Args: Decodable {
             let exercises: [CanonicalRun.Exercise]
             let time: String
