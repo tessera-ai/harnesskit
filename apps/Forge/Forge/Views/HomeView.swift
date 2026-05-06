@@ -140,9 +140,13 @@ struct HomeView: View {
         }
         .tint(.luminescentViolet)
         .task {
-            // Sync persisted state with actual HealthKit authorization on launch.
-            healthKitAuthorized = HealthStoreManager.shared.isAuthorized
+            // On first launch, healthKitAuthorized defaults to false,
+            // showing the permission card. Once granted, it persists
+            // via @AppStorage. We don't re-check actual HK status because
+            // Apple doesn't expose read-grant state — the "asked once"
+            // pattern is the standard HealthKit workaround.
             if ProcessInfo.processInfo.arguments.contains("--auto-demo") {
+                healthKitAuthorized = true
                 try? await Task.sleep(nanoseconds: 800_000_000)
                 await runCoach()
             }

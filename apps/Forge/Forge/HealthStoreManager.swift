@@ -8,16 +8,6 @@ final class HealthStoreManager {
 
     private init() {}
 
-    // MARK: - Authorization status
-
-    /// Returns `true` when the user has granted at-share authorization for the
-    /// workout type (a reasonable proxy that the full permission grant succeeded).
-    var isAuthorized: Bool {
-        guard HKHealthStore.isHealthDataAvailable() else { return false }
-        let workout = HKSampleType.workoutType()
-        return store.authorizationStatus(for: workout) == .sharingAuthorized
-    }
-
     // MARK: - Types Coach reads
 
     /// The 5 metrics Forge's Coach agent queries from HealthKit.
@@ -31,11 +21,6 @@ final class HealthStoreManager {
         ])
     }
 
-    /// The write types Forge needs — workouts scheduled by WorkoutKit.
-    private var shareTypes: Set<HKSampleType> {
-        Set([HKSampleType.workoutType()])
-    }
-
     // MARK: - Request
 
     /// Requests HealthKit authorization for all metrics Coach uses.
@@ -44,7 +29,11 @@ final class HealthStoreManager {
         guard HKHealthStore.isHealthDataAvailable() else {
             return false
         }
-        try await store.requestAuthorization(toShare: shareTypes, read: readTypes)
-        return isAuthorized
+        try await store.requestAuthorization(toShare: [], read: readTypes)
+        // Apple doesn't expose read-grant status via authorizationStatus(for:).
+        // Gate on the call succeeding without throwing — if the user denied,
+        // requestAuthorization still returns successfully, but queries return
+        // empty data. The "asked once" pattern is the standard workaround.
+        return true
     }
 }
