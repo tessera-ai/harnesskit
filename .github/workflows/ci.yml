@@ -48,7 +48,7 @@ jobs:
           xcodebuild \
             -project Forge.xcodeproj \
             -scheme Forge \
-            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+            -destination 'generic/platform=iOS Simulator' \
             clean build \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
