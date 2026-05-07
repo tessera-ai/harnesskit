@@ -67,4 +67,42 @@ final class WorkoutKitTests: XCTestCase {
         XCTAssertTrue(result.contains("\"scheduled\":true"))
         XCTAssertTrue(result.contains("\"workoutId\":\"wk_a1b2c3\""))
     }
+    // MARK: - TimeParser
+
+    func testTimeParserValidTimes() {
+        let t0600 = TimeParser.parse("06:00")
+        XCTAssertEqual(t0600?.hour, 6)
+        XCTAssertEqual(t0600?.minute, 0)
+
+        let t2359 = TimeParser.parse("23:59")
+        XCTAssertEqual(t2359?.hour, 23)
+        XCTAssertEqual(t2359?.minute, 59)
+
+        let t0000 = TimeParser.parse("00:00")
+        XCTAssertEqual(t0000?.hour, 0)
+        XCTAssertEqual(t0000?.minute, 0)
+    }
+
+    func testTimeParserRejectsInvalidHour() {
+        XCTAssertNil(TimeParser.parse("24:00"))
+        XCTAssertNil(TimeParser.parse("25:00"))
+        XCTAssertNil(TimeParser.parse("-1:00"))
+    }
+
+    func testTimeParserRejectsInvalidMinute() {
+        XCTAssertNil(TimeParser.parse("12:60"))
+        XCTAssertNil(TimeParser.parse("12:90"))
+    }
+
+    func testTimeParserRejectsMalformed() {
+        XCTAssertNil(TimeParser.parse("abc"))
+        XCTAssertNil(TimeParser.parse("7"))
+        XCTAssertNil(TimeParser.parse(""))
+        XCTAssertNil(TimeParser.parse("::"))
+    }
+
+    func testTimeParserDefaultConstants() {
+        XCTAssertEqual(TimeParser.defaultHour, 18)
+        XCTAssertEqual(TimeParser.defaultMinute, 0)
+    }
 }

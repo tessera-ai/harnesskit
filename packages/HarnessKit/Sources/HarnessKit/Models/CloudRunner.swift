@@ -15,8 +15,10 @@ public protocol CloudModelRunner: Sendable {
 /// provider's label stamped in. Simulates a ~1200ms cloud round-trip for
 /// demo cadence. Real network wiring lives behind the ``CloudModelRunner``
 /// protocol seam for external implementations.
-enum CloudRunner {
-    static func run(
+public struct StubCloudRunner: CloudModelRunner {
+    public init() {}
+
+    public func run(
         agent: Agent,
         input: String
     ) async throws -> AgentResponse {

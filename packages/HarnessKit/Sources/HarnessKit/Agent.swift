@@ -72,7 +72,7 @@ public struct Agent: Sendable {
         case .onDevice:
             return try await FoundationRunner.run(agent: self, input: input)
         case .cloud:
-            return try await CloudRunner.run(agent: self, input: input)
+            return try await StubCloudRunner().run(agent: self, input: input)
         }
     }
 }

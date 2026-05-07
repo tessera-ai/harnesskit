@@ -41,6 +41,35 @@ public struct MockWorkoutScheduler: WorkoutScheduling {
     }
 }
 
+// MARK: - Time parsing
+
+/// Parses a time string (e.g. "18:00") into `DateComponents`, validating
+/// that hour is 0–23 and minute is 0–59. Returns `nil` for unparseable
+/// or out-of-range inputs.
+///
+/// Extracted as a pure function for testability — the LLM-produced
+/// `time` field in `argsJSON` cannot be trusted at face value.
+public enum TimeParser: Sendable {
+    /// Default time used when parsing fails (6 PM today).
+    public static let defaultHour = 18
+    public static let defaultMinute = 0
+
+    /// Parse a \"HH:MM\" string into `DateComponents`.
+    /// - Returns: `DateComponents` with hour/minute/calendar set, or `nil` if invalid.
+    public static func parse(_ time: String) -> DateComponents? {
+        let parts = time.split(separator: ":").compactMap { Int($0) }
+        guard parts.count >= 2 else { return nil }
+        let hour = parts[0]
+        let minute = parts[1]
+        guard (0...23).contains(hour), (0...59).contains(minute) else { return nil }
+        var dc = DateComponents()
+        dc.hour = hour
+        dc.minute = minute
+        dc.calendar = Calendar.current
+        return dc
+    }
+}
+
 // MARK: - LiveWorkoutScheduler (Apple WorkoutKit, iOS only)
 
 #if canImport(WorkoutKit) && !os(macOS)
@@ -77,30 +106,10 @@ public struct MockWorkoutScheduler: WorkoutScheduling {
             let plan = WorkoutPlan(.custom(customWorkout))
 
             // Parse time string (e.g. "18:00") into DateComponents.
-            let timeParts = time.split(separator: ":").compactMap { Int($0) }
-            var dateComponents = DateComponents()
-            if timeParts.count >= 2 {
-                let hour = timeParts[0]
-                let minute = timeParts[1]
-                guard (0...23).contains(hour), (0...59).contains(minute) else {
-                    throw TesseraError.toolError(
-                        tool: "workoutkit_schedule",
-                        underlying: NSError(
-                            domain: "HarnessKit",
-                            code: -3,
-                            userInfo: [NSLocalizedDescriptionKey: "Invalid time \"\(time)\""]
-                        )
-                    )
-                }
-                dateComponents.hour = hour
-                dateComponents.minute = minute
-            } else {
-                // Default to 6 PM today.
-                dateComponents.hour = 18
-                dateComponents.minute = 0
-            }
+            var dateComponents =
+                TimeParser.parse(time)
+                ?? DateComponents(hour: TimeParser.defaultHour, minute: TimeParser.defaultMinute)
             dateComponents.calendar = Calendar.current
-
             try await WorkoutScheduler.shared.schedule(plan, at: dateComponents)
 
             // schedule(_:at:) returns Void on success. Use the plan's id.
