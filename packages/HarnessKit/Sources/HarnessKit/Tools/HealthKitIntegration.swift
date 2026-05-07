@@ -97,12 +97,14 @@ public struct MockHealthDataProvider: HealthDataProvider, Sendable {
                     let current = try await sumQuantity(
                         identifier: .activeEnergyBurned,
                         unit: .kilocalorie(),
-                        daysAgo: 7..<0
+                        startDaysAgo: 7,
+                        endDaysAgo: 0
                     )
                     let prior = try await sumQuantity(
                         identifier: .activeEnergyBurned,
                         unit: .kilocalorie(),
-                        daysAgo: 14..<7
+                        startDaysAgo: 14,
+                        endDaysAgo: 7
                     )
                     result["activeEnergy"] = current
                     result["window"] = "7d"
@@ -161,17 +163,18 @@ public struct MockHealthDataProvider: HealthDataProvider, Sendable {
             }
         }
 
-        /// Sum a quantity type over a configurable day range.
+        /// Sum a quantity type over a configurable day window.
         private func sumQuantity(
             identifier: HKQuantityTypeIdentifier,
             unit: HKUnit,
-            daysAgo: Range<Int>
+            startDaysAgo: Int,
+            endDaysAgo: Int
         ) async throws -> Double {
             let values = try await queryQuantityInRange(
                 identifier: identifier,
                 unit: unit,
-                startDaysAgo: daysAgo.upperBound,
-                endDaysAgo: daysAgo.lowerBound
+                startDaysAgo: startDaysAgo,
+                endDaysAgo: endDaysAgo
             )
             return values.reduce(0, +)
         }

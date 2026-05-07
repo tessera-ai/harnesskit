@@ -89,23 +89,13 @@ enum FoundationRunner {
 
             var events: [TraceEvent] = [.userInput(atMs: 0, text: input)]
             // Track per-event timing from the stream.
-            var eventTimings: [(event: TraceEvent, atMs: Int)] = []
             let streamStartTime = Date()
 
             do {
                 // Stream the response and build trace events incrementally.
                 let stream = session.streamResponse(to: input)
                 for try await snapshot in stream {
-                    let elapsed = Int(Date().timeIntervalSince(streamStartTime) * 1000)
-                    // Capture partial text chunks for timing reference.
                     _ = snapshot.content
-                    // We'll build the trace from the transcript after streaming,
-                    // but record timing checkpoints from the stream itself.
-                    eventTimings = buildEventsFromSnapshot(
-                        session.transcript,
-                        elapsed: elapsed,
-                        existingEvents: &events
-                    )
                 }
 
                 // Build final trace from completed transcript with proper timing.
@@ -145,15 +135,10 @@ enum FoundationRunner {
                 default:
                     throw TesseraError.modelUnavailable(reason: error.localizedDescription)
                 }
-            } catch is LanguageModelSession.ToolCallError {
+            } catch let toolError as LanguageModelSession.ToolCallError {
                 throw TesseraError.toolError(
-                    tool: "unknown",
-                    underlying: NSError(
-                        domain: "HarnessKit",
-                        code: -2,
-                        userInfo: [NSLocalizedDescriptionKey: "Foundation Models tool call failed"]
-                    )
-                )
+                    tool: toolError.tool.name,
+                    underlying: toolError.underlyingError)
             } catch {
                 throw TesseraError.modelUnavailable(reason: error.localizedDescription)
             }
@@ -227,18 +212,6 @@ enum FoundationRunner {
             }
 
             return events
-        }
-
-        /// Placeholder — snapshot-driven timing capture during streaming.
-        /// Returns empty array; real timing is handled by buildTraceFromTranscript.
-        private static func buildEventsFromSnapshot(
-            _ transcript: Transcript,
-            elapsed: Int,
-            existingEvents: inout [TraceEvent]
-        ) -> [(event: TraceEvent, atMs: Int)] {
-            // Timing is driven by buildTraceFromTranscript after the stream completes.
-            // This hook exists for future incremental event capture.
-            return []
         }
 
         /// Serialize tool output segments to a JSON string.

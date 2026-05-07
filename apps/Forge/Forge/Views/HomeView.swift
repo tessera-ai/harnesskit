@@ -9,7 +9,6 @@ struct HomeView: View {
 
     @State private var traceLines: [TraceLine] = []
     @State private var animationDone = false
-    @State private var pendingResult: Result<AgentResponse, Error>?
 
     @AppStorage("healthKitAuthorized") private var healthKitAuthorized = false
     @State private var isRequestingPermission = false
@@ -269,12 +268,12 @@ struct HomeView: View {
         errorMessage = nil
         traceLines = []
         animationDone = false
-        pendingResult = nil
+
         isLoading = true
 
         // Kick off the real agent.run() in parallel with the animation. We
         // don't gate navigation on its latency — the canonical animation
-        // (~5s) is the long pole. Result lands in `pendingResult`.
+        // (~5s) is the long pole.
         // In --auto-demo mode (used to record the marketing video) we
         // short-circuit to the canonical fixture so timing is deterministic
         // and we don't depend on Foundation Models cold-start latency.
@@ -310,7 +309,6 @@ struct HomeView: View {
         // Wait for the real agent.run() to land (typically faster than
         // the animation, but we await it for correctness).
         let result = await runTask.value
-        pendingResult = result
 
         // Decide: navigate or surface error.
         switch result {

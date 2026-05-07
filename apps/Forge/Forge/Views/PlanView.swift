@@ -237,11 +237,10 @@ struct PlanView: View {
             }
         }
 
-        let hasAny = recovery != nil || load != nil || vo2 != nil
-        return hasAny
-            ? HealthSignals(recovery: recovery, load: load, vo2: vo2)
-            : nil
-                ?? HealthSignals(recovery: "Recovery 72", load: "Load -8% / 7d", vo2: "VO₂ 47.2")
+        guard recovery != nil || load != nil || vo2 != nil else {
+            return HealthSignals(recovery: "Recovery 72", load: "Load -8% / 7d", vo2: "VO₂ 47.2")
+        }
+        return HealthSignals(recovery: recovery, load: load, vo2: vo2)
     }
 
     private static func parseRecovery(from json: [String: Any]) -> String? {

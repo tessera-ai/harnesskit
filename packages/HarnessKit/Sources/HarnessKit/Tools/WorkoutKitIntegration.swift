@@ -80,8 +80,20 @@ public struct MockWorkoutScheduler: WorkoutScheduling {
             let timeParts = time.split(separator: ":").compactMap { Int($0) }
             var dateComponents = DateComponents()
             if timeParts.count >= 2 {
-                dateComponents.hour = timeParts[0]
-                dateComponents.minute = timeParts[1]
+                let hour = timeParts[0]
+                let minute = timeParts[1]
+                guard (0...23).contains(hour), (0...59).contains(minute) else {
+                    throw TesseraError.toolError(
+                        tool: "workoutkit_schedule",
+                        underlying: NSError(
+                            domain: "HarnessKit",
+                            code: -3,
+                            userInfo: [NSLocalizedDescriptionKey: "Invalid time \"\(time)\""]
+                        )
+                    )
+                }
+                dateComponents.hour = hour
+                dateComponents.minute = minute
             } else {
                 // Default to 6 PM today.
                 dateComponents.hour = 18
