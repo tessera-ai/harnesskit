@@ -1,11 +1,11 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 6.2
 import PackageDescription
 
 let package = Package(
     name: "Tessera",
     platforms: [
-        .iOS("26.0"),
-        .macOS("26.0")
+        .iOS(.v26),
+        .macOS(.v26),
     ],
     products: [
         .library(
@@ -16,12 +16,15 @@ let package = Package(
     targets: [
         .target(
             name: "Tessera",
-            path: "Sources/HarnessKit"
+            path: "Sources/HarnessKit",
+            linkerSettings: [
+                .unsafeFlags(["-Xlinker", "-weak_framework", "-Xlinker", "FoundationModels"])
+            ]
         ),
         .testTarget(
             name: "HarnessKitTests",
             dependencies: ["Tessera"],
-            path: "Tests/HarnessKitTests"
-        )
+            path: "Tests/HarnessKitTests",
+        ),
     ]
 )

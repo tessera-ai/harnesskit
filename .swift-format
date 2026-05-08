@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "tabWidth": 4,
+  "indentation": { "spaces": 4 },
+  "lineLength": 120,
+  "maximumBlankLines": 1,
+  "respectsExistingLineBreaks": true,
+  "lineBreakBeforeControlFlowKeywords": false,
+  "lineBreakBeforeEachArgument": false,
+  "lineBreakBeforeEachGenericRequirement": false,
+  "prioritizeKeepingFunctionOutputTogether": true,
+  "indentConditionalCompilationBlocks": true,
+  "indentSwitchCaseLabels": false,
+  "spaceAroundBraces": false,
+  "spaceInsideBrackets": false,
+  "spaceInsideParens": false,
+  "spaceInsideComments": false,
+  "typeAttributes": {
+    "protocol": [ "override", "private", "private(set)", "fileprivate", "fileprivate(set)", "internal", "internal(set)", "public", "public(set)", "open", "open(set)", "@Sendable", "@MainActor", "@available", "@dynamicMemberLookup" ],
+  },
+  "fileScopedDeclarationPrivacy": { "accessLevel": "private" }
+}

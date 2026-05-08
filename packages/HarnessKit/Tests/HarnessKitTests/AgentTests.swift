@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import Tessera
 
 final class AgentTests: XCTestCase {
@@ -13,7 +14,7 @@ final class AgentTests: XCTestCase {
             instructions: "Plan today's lift based on recovery.",
             tools: [
                 HealthKit.read(.hrv, .sleep, .restingHeartRate),
-                WorkoutKit.schedule
+                WorkoutKit.schedule,
             ],
             model: .onDevice(.foundation),
             fallback: .cloud(.claude)
@@ -35,7 +36,7 @@ final class AgentTests: XCTestCase {
             instructions: "Plan today's lift based on recovery.",
             tools: [
                 HealthKit.read(.hrv, .sleep, .restingHeartRate),
-                WorkoutKit.schedule
+                WorkoutKit.schedule,
             ],
             model: .onDevice(.foundation),
             fallback: .cloud(.claude)
@@ -64,7 +65,8 @@ final class AgentTests: XCTestCase {
 
     func testWorkoutKitToolReturnsScheduledTrue() async throws {
         let tool = WorkoutKit.schedule
-        let result = try await tool.invokeJSON("{}")
+        let argsJSON = CanonicalRun.workoutkitArgsJSON
+        let result = try await tool.invokeJSON(argsJSON)
         XCTAssertTrue(result.contains("\"scheduled\":true"))
         XCTAssertTrue(result.contains("\"workoutId\":\"wk_a1b2c3\""))
     }
@@ -101,5 +103,163 @@ final class AgentTests: XCTestCase {
         XCTAssertEqual(ModelProvider.onDevice(.foundation).label, "Apple Foundation Models (on-device)")
         XCTAssertTrue(ModelProvider.onDevice(.foundation).isOnDevice)
         XCTAssertFalse(ModelProvider.cloud(.claude).isOnDevice)
+    }
+
+    // MARK: - Error paths
+
+    func testRunWithEmptyInputThrowsInvalidInput() async {
+        let coach = Agent(
+            name: "TestCoach",
+            instructions: "Test",
+            tools: [HealthKit.read(.hrv)],
+            model: .onDevice(.foundation)
+        )
+        do {
+            _ = try await coach.run("")
+            XCTFail("Expected TesseraError.invalidInput for empty input")
+        } catch let error as TesseraError {
+            if case .invalidInput(let detail) = error {
+                XCTAssertTrue(
+                    detail.localizedCaseInsensitiveContains("empty"),
+                    "Error detail should mention empty"
+                )
+            } else {
+                XCTFail("Expected .invalidInput, got \(error)")
+            }
+        } catch {
+            XCTFail("Expected TesseraError, got \(error)")
+        }
+    }
+
+    func testRunWithWhitespaceOnlyInputThrowsInvalidInput() async {
+        let coach = Agent(
+            name: "TestCoach",
+            instructions: "Test",
+            tools: [HealthKit.read(.hrv)],
+            model: .onDevice(.foundation)
+        )
+        do {
+            _ = try await coach.run("   \n\t  ")
+            XCTFail("Expected TesseraError.invalidInput for whitespace-only input")
+        } catch let error as TesseraError {
+            if case .invalidInput = error {
+                // Correct
+            } else {
+                XCTFail("Expected .invalidInput, got \(error)")
+            }
+        } catch {
+            XCTFail("Expected TesseraError, got \(error)")
+        }
+    }
+
+    // MARK: - Fallback agent
+
+    func testFallbackAgentReturnsCanonicalResponse() async throws {
+        let coach = Agent(
+            name: "FallbackCoach",
+            instructions: "Test fallback",
+            tools: [HealthKit.read(.hrv)],
+            model: .onDevice(.foundation),
+            fallback: .cloud(.claude)
+        )
+        // On macOS, FoundationRunner stub succeeds immediately (no fallback triggered)
+        let response = try await coach.run("Plan my workout")
+        XCTAssertFalse(response.text.isEmpty)
+        XCTAssertEqual(response.trace.events.count, 14)
+    }
+
+    // MARK: - TesseraError equality
+
+    func testTesseraErrorEquality() {
+        // Same case, same values -> equal
+        XCTAssertEqual(
+            TesseraError.modelUnavailable(reason: "x"),
+            TesseraError.modelUnavailable(reason: "x")
+        )
+        XCTAssertEqual(
+            TesseraError.invalidInput("a"),
+            TesseraError.invalidInput("a")
+        )
+        XCTAssertEqual(
+            TesseraError.noToolsRegistered,
+            TesseraError.noToolsRegistered
+        )
+
+        // Same case, different values -> not equal
+        XCTAssertNotEqual(
+            TesseraError.modelUnavailable(reason: "x"),
+            TesseraError.modelUnavailable(reason: "y")
+        )
+        XCTAssertNotEqual(
+            TesseraError.invalidInput("a"),
+            TesseraError.invalidInput("b")
+        )
+
+        // Different cases -> not equal
+        XCTAssertNotEqual(
+            TesseraError.modelUnavailable(reason: "x"),
+            TesseraError.invalidInput("x")
+        )
+    }
+
+    // MARK: - TesseraError localized descriptions
+
+    func testTesseraErrorLocalizedDescriptions() {
+        let modelErr = TesseraError.modelUnavailable(reason: "not enabled")
+        XCTAssertTrue(modelErr.localizedDescription.contains("not enabled"))
+
+        let inputErr = TesseraError.invalidInput("empty")
+        XCTAssertTrue(inputErr.localizedDescription.contains("empty"))
+
+        let noToolsErr = TesseraError.noToolsRegistered
+        XCTAssertTrue(noToolsErr.localizedDescription.contains("no tools"))
+
+        let toolErr = TesseraError.toolError(
+            tool: "healthkit_read",
+            underlying: NSError(domain: "Test", code: 1)
+        )
+        XCTAssertTrue(toolErr.localizedDescription.contains("healthkit_read"))
+    }
+
+    func testTesseraErrorFallbackFailedDescription() {
+        let primary = TesseraError.modelUnavailable(reason: "primary down")
+        let fallback = TesseraError.modelUnavailable(reason: "fallback down")
+        let error = TesseraError.fallbackFailed(primary: primary, fallback: fallback)
+        XCTAssertTrue(error.localizedDescription.contains("Both providers failed"))
+        XCTAssertTrue(error.localizedDescription.contains("primary down"))
+        XCTAssertTrue(error.localizedDescription.contains("fallback down"))
+    }
+
+    // MARK: - AgentConfiguration defaults
+
+    func testAgentConfigurationDefaultsToFalse() {
+        let config = AgentConfiguration()
+        XCTAssertFalse(config.useCanonicalFixture)
+
+        let explicitConfig = AgentConfiguration(useCanonicalFixture: true)
+        XCTAssertTrue(explicitConfig.useCanonicalFixture)
+    }
+
+    // MARK: - No tools registered
+
+    func testRunWithNoToolsThrowsNoToolsRegistered() async {
+        let coach = Agent(
+            name: "EmptyCoach",
+            instructions: "No tools",
+            tools: [],
+            model: .onDevice(.foundation)
+        )
+        do {
+            _ = try await coach.run("Hello")
+            XCTFail("Expected TesseraError.noToolsRegistered")
+        } catch let error as TesseraError {
+            if case .noToolsRegistered = error {
+                // Correct
+            } else {
+                XCTFail("Expected .noToolsRegistered, got \(error)")
+            }
+        } catch {
+            XCTFail("Expected TesseraError, got \(error)")
+        }
     }
 }
